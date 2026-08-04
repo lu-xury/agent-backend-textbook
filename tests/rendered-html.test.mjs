@@ -19,10 +19,13 @@ test("builds the GitHub Pages textbook bundle", async () => {
   const bundle = await readFile(join(distRoot.pathname, scriptPath), "utf8");
   const styles = await readFile(join(distRoot.pathname, stylePath), "utf8");
 
-  assert.match(bundle, /把一段代码看成五层契约/);
-  assert.match(bundle, /一段“看起来没问题”的模型调用为什么拖垮服务/);
-  assert.match(bundle, /本章教材正文/);
-  assert.match(bundle, /值、引用与所有权/);
+  assert.match(bundle, /本章正文/);
+  assert.match(bundle, /值、类型、内存与可变性/);
+  assert.match(bundle, /进程、线程与调度/);
+  assert.match(bundle, /链路层/);
+  assert.match(bundle, /TCP、TLS 与连接生命周期/);
+  assert.match(bundle, /事务、MVCC、锁与隔离/);
+  assert.match(bundle, /工作机制/);
   assert.match(bundle, /举个例子/);
   assert.match(bundle, /小练习/);
   assert.match(bundle, /全书能力校准/);

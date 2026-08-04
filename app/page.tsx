@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { algorithmInterviewTrack, interviewAssessment, interviewChapters, interviewCjkCharacters, mockInterviewGauntlet } from "./interview-track";
+import { algorithmInterviewTrack, interviewAssessment, interviewChapters, mockInterviewGauntlet } from "./interview-track";
 import type { InterviewChapter } from "./interview-track";
 import { chapterExpansions } from "./textbook-expansions";
-import { deepChapters, deepVolumeCjkCharacters } from "./textbook-volume";
+import { deepChapters, deepVolumeCjkCharacters } from "./professional-textbook";
 import type { DeepUnit } from "./volume/types";
 
 type Language = "python" | "cpp" | "rust";
@@ -514,6 +514,13 @@ function DeepUnitView({ unit, language }: { unit: DeepUnit; language: Language }
         ))}
       </div>
 
+      <section className="mechanism-walkthrough">
+        <div className="subsection-heading"><span>MECHANISM</span><h3>工作机制</h3></div>
+        <ol>{unit.mechanismSteps.map((step, index) => (
+          <li key={step.title}><b>{String(index + 1).padStart(2, "0")}</b><div><h4>{step.title}</h4><p>{renderInline(step.detail)}</p></div></li>
+        ))}</ol>
+      </section>
+
       <section className="unit-example">
         <div className="subsection-heading"><span>EXAMPLE</span><h3>举个例子</h3></div>
         <p>{renderInline(unit.caseStudy.symptom)}</p>
@@ -831,14 +838,14 @@ export default function Home() {
 
         <section className="volume-note">
           <div>
-            <span className="section-kicker">TEXTBOOK EDITION</span>
-            <h2>本章教材正文</h2>
-            <p>下面以连续讲解为主，例子只用于说明知识点。每节都刻意避免平行模板，重点内容会用粗体标出，章末再集中放练习和速查。</p>
+            <span className="section-kicker">CORE TEXT</span>
+            <h2>本章正文</h2>
+            <p>每个小节依次解释定义与范围、工作机制、反例与边界，再给出可亲手验证的小练习。</p>
           </div>
           <div className="volume-stats">
-            <b>{deepChapter.units.length}</b><span>个教学小节</span>
-            <b>{Math.round(deepVolumeCjkCharacters / 10000)} 万</b><span>全书可读正文约数</span>
-            <b>{Math.round(interviewCjkCharacters / 10000)} 万</b><span>强化训练正文约数</span>
+            <b>{deepChapter.units.length}</b><span>个连续小节</span>
+            <b>{Math.round(deepVolumeCjkCharacters / 10000)} 万</b><span>全书正文约数</span>
+            <b>4</b><span>个固定学习环节</span>
           </div>
         </section>
 

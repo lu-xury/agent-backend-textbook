@@ -279,6 +279,7 @@ footer p { margin: 0; }
 
 .section-kicker { display: inline-block; margin-bottom: 10px; color: var(--teal); font-size: 10px; font-weight: 800; letter-spacing: .18em; }
 .chapter-opening, .mental-model, .comparison-section, .case-study-section, .guided-lab-section, .review-section { max-width: 1024px; margin: 72px auto; }
+.chapter-opening, .mental-model, .comparison-section, .quick-reference-heading, .reading-layout, .case-study-section, .guided-lab-section, .review-section { display: none; }
 .chapter-opening { padding: 42px 48px; border-top: 1px solid #aebeb8; border-bottom: 1px solid #aebeb8; background: rgba(255,255,255,.3); }
 .chapter-opening h2 { max-width: 800px; margin: 0 0 25px; font-family: Georgia, "Noto Serif SC", serif; font-size: 31px; font-weight: 500; line-height: 1.4; }
 .opening-copy { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
