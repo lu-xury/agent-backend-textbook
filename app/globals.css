@@ -186,7 +186,7 @@ footer p { margin: 0; }
 .deep-prose { max-width: 800px; margin: 0 auto 44px; }
 .deep-prose p { position: relative; margin: 0 0 23px; color: #263f3c; font-size: 18px; line-height: 2.02; text-align: justify; text-justify: inter-ideograph; }
 .deep-prose p > span { position: absolute; left: -46px; top: 7px; color: #8ea09b; font-family: Georgia, serif; font-size: 11px; }
-.deep-prose strong, .deep-question strong, .unit-example strong, .language-deep-dive strong, .unit-lab strong { color: #0a6f67; font-weight: 800; }
+.deep-prose strong, .deep-question strong, .unit-example strong, .interview-drill strong, .language-deep-dive strong, .unit-lab strong { color: #0a6f67; font-weight: 800; }
 .subsection-heading { margin-bottom: 21px; }
 .subsection-heading span { color: var(--teal); font-size: 10px; font-weight: 800; letter-spacing: .17em; }
 .subsection-heading h3 { margin: 6px 0 0; color: #173437; font-family: Georgia, "Noto Serif SC", serif; font-size: 27px; font-weight: 500; }
@@ -206,6 +206,18 @@ footer p { margin: 0; }
 .example-columns article { padding: 22px 24px; background: #fffdf8; }
 .example-columns b { display: block; margin-bottom: 8px; color: #0b6b63; font-size: 13px; letter-spacing: .04em; }
 .example-columns p { margin: 0; color: #394f4b; font-size: 15px; line-height: 1.85; }
+
+.interview-drill { margin: 46px 0; padding: 31px 35px; border: 1px solid #c8b79b; border-top: 4px solid #c27648; background: #fff8ec; }
+.interview-drill .subsection-heading span { color: #b75f37; }
+.interview-drill .subsection-heading h3 { color: #54392c; }
+.interview-drill p { max-width: 860px; margin: 0 0 17px; color: #483b32; font-size: 16px; line-height: 1.9; }
+.interview-core { padding: 17px 19px; border-left: 3px solid #c27648; background: rgba(255,255,255,.52); font-weight: 650; }
+.interview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin-top: 20px; border: 1px solid #d6c7ae; background: #d6c7ae; }
+.interview-grid article { padding: 22px 24px; background: #fffdf8; }
+.interview-grid b { display: block; margin-bottom: 11px; color: #9c4f2c; font-size: 13px; letter-spacing: .05em; }
+.interview-grid ol, .interview-grid ul { margin: 0; padding-left: 20px; }
+.interview-grid li { margin: 0 0 11px; padding-left: 3px; color: #56483f; font-size: 15px; line-height: 1.75; }
+.interview-grid li:last-child { margin-bottom: 0; }
 
 .unit-case { margin: 60px 0; padding: 43px; color: #dceae7; background: linear-gradient(145deg, #16363b, #0d252b); box-shadow: 0 18px 50px rgba(14,34,39,.14); }
 .unit-case-symptom { margin: 0 0 30px; padding: 20px 22px; border-left: 3px solid #e48258; color: #e8ddd5; background: rgba(225,128,85,.1); font-size: 16px; line-height: 1.95; }
@@ -355,10 +367,11 @@ footer p { margin: 0; }
   .deep-prose { margin-left: 0; margin-right: 0; }
   .deep-prose p { font-size: 17px; text-align: left; }
   .deep-prose p > span { position: static; display: inline-block; width: 30px; }
-  .mechanism-walkthrough, .unit-case, .unit-example, .language-deep-dive { padding: 27px 22px; }
+  .mechanism-walkthrough, .unit-case, .unit-example, .interview-drill, .language-deep-dive { padding: 27px 22px; }
   .mechanism-walkthrough li { grid-template-columns: 30px 1fr; }
   .unit-case-columns { grid-template-columns: 1fr; }
   .example-columns { grid-template-columns: 1fr; }
+  .interview-grid { grid-template-columns: 1fr; }
   .unit-lab { grid-template-columns: 1fr; }
   .unit-lab-intro { border-right: 0; border-bottom: 1px solid #c9bfae; }
   .unit-lab-intro, .unit-lab-body { padding: 27px 22px; }
