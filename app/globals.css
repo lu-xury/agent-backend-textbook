@@ -94,6 +94,26 @@ button { color: inherit; }
 .language-track > p { margin: 0; color: #294d48; font-size: 13px; line-height: 1.8; }
 .track-hint { max-width: 120px; color: #8da09c; font-size: 8px; line-height: 1.6; text-align: right; }
 
+.interview-assessment {
+  max-width: 1024px; margin: 0 auto 68px; padding: 38px 42px;
+  border: 1px solid #bfa27e; border-top: 5px solid #c36f3d;
+  background: linear-gradient(135deg, #fff6e7 0%, #f7ead7 100%);
+  box-shadow: 0 18px 55px rgba(83, 55, 33, .08);
+}
+.assessment-copy h2, .interview-heading h2 { margin: 4px 0 14px; color: #3f3028; font-family: Georgia, "Noto Serif SC", serif; font-size: 32px; font-weight: 520; line-height: 1.35; }
+.assessment-copy p { max-width: 880px; margin: 0 0 16px; color: #493a31; font-size: 17px; line-height: 1.95; }
+.assessment-copy strong, .assessment-standards strong, .algorithm-bridge strong, .interview-section strong { color: #0a6f67; font-weight: 800; }
+.assessment-standards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin: 28px 0; border: 1px solid #d3bea0; background: #d3bea0; }
+.assessment-standards article { padding: 20px; background: rgba(255,253,248,.78); }
+.assessment-standards b { color: #b46135; font-family: Georgia, serif; font-size: 14px; }
+.assessment-standards p { margin: 9px 0 0; color: #4e4037; font-size: 14px; line-height: 1.75; }
+.algorithm-bridge { display: grid; grid-template-columns: 245px 1fr; gap: 28px; padding-top: 28px; border-top: 1px solid #d2b996; }
+.algorithm-bridge span { color: #b46135; font-size: 10px; font-weight: 800; letter-spacing: .16em; }
+.algorithm-bridge h3 { margin: 8px 0 12px; color: #47352b; font-family: Georgia, "Noto Serif SC", serif; font-size: 25px; font-weight: 520; }
+.algorithm-bridge p { margin: 0; color: #5b4b40; font-size: 14px; line-height: 1.85; }
+.algorithm-bridge ul { columns: 2; column-gap: 32px; margin: 0; padding-left: 22px; }
+.algorithm-bridge li { break-inside: avoid; margin: 0 0 10px; color: #4d4038; font-size: 14px; line-height: 1.75; }
+
 .reading-layout { display: grid; grid-template-columns: minmax(0, 760px) 190px; gap: 58px; max-width: 1024px; margin: auto; align-items: start; }
 .lesson { scroll-margin-top: 22px; margin-bottom: 70px; }
 .lesson-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
@@ -278,6 +298,38 @@ footer p { margin: 0; }
 .comparison-section td:first-child { color: #0b665f; font-weight: 700; }
 .comparison-section tbody tr:nth-child(even) { background: rgba(210,229,222,.24); }
 
+.interview-section {
+  max-width: 1024px; margin: 78px auto 82px; padding: 42px;
+  color: #eef7f3; background: linear-gradient(145deg, #183a3d, #10282e);
+  box-shadow: 0 20px 60px rgba(14,34,39,.15);
+}
+.interview-section .section-kicker { color: #7bd0bc; }
+.interview-heading p { max-width: 860px; margin: 0; color: #bdd0cd; font-size: 16px; line-height: 1.9; }
+.interview-heading h2 { color: #f4faf7; }
+.interview-focus-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 28px 0 30px; }
+.interview-focus-row span { padding: 8px 11px; color: #dff4ed; border: 1px solid rgba(137,211,194,.3); background: rgba(122,205,185,.1); font-size: 12px; }
+.interview-qa { border-top: 1px solid rgba(255,255,255,.13); }
+.interview-qa details { border-bottom: 1px solid rgba(255,255,255,.13); background: rgba(255,255,255,.025); }
+.interview-qa details[open] { background: rgba(255,255,255,.055); }
+.interview-qa summary { display: flex; gap: 16px; padding: 20px 18px; color: #f3f6f2; font-size: 17px; font-weight: 680; line-height: 1.65; cursor: pointer; list-style: none; }
+.interview-qa summary::-webkit-details-marker { display: none; }
+.interview-qa summary span { flex-shrink: 0; color: #8ed5c3; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+.interview-qa details > div { padding: 0 24px 23px 100px; }
+.interview-qa p { margin: 0 0 13px; color: #c7d8d5; font-size: 15px; line-height: 1.9; }
+.interview-qa .follow-up { color: #f0d2bd; }
+.interview-qa .follow-up b { color: #f29a68; }
+.interview-drill-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 32px 0; }
+.interview-drill-grid article { padding: 26px 28px; background: #fff9ed; color: #45362d; }
+.interview-drill-grid span { color: #b46135; font-size: 10px; font-weight: 800; letter-spacing: .15em; }
+.interview-drill-grid h3 { margin: 8px 0 13px; color: #3e3029; font-family: Georgia, "Noto Serif SC", serif; font-size: 24px; font-weight: 520; }
+.interview-drill-grid p { margin: 0 0 16px; color: #55463c; font-size: 15px; line-height: 1.85; }
+.interview-drill-grid ul { margin: 0; padding-left: 20px; }
+.interview-drill-grid li { margin: 0 0 10px; color: #4c433b; font-size: 14px; line-height: 1.7; }
+.interview-traps { display: grid; grid-template-columns: 120px 1fr; gap: 18px; align-items: start; padding-top: 26px; border-top: 1px solid rgba(255,255,255,.14); }
+.interview-traps b { color: #f29a68; font-size: 12px; letter-spacing: .08em; }
+.interview-traps div { display: flex; flex-wrap: wrap; gap: 8px; }
+.interview-traps span { padding: 8px 10px; color: #f4e3d7; background: rgba(242,154,104,.1); border: 1px solid rgba(242,154,104,.25); font-size: 12px; line-height: 1.45; }
+
 .case-study-section { padding: 42px; border-top: 5px solid var(--orange); background: #fffaf4; box-shadow: 0 18px 55px rgba(58,43,34,.08); }
 .case-heading { display: grid; grid-template-columns: 105px 1fr; gap: 24px; align-items: start; }
 .case-number { padding-top: 8px; color: #cb6d45; font-family: Georgia, serif; font-size: 14px; letter-spacing: .08em; }
@@ -321,9 +373,9 @@ footer p { margin: 0; }
 @media (max-width: 1050px) {
   .reading-layout { grid-template-columns: 1fr; padding: 0 42px; }
   .chapter-toc { display: none; }
-  .outcome-panel, .practice-section, .completion-section, .pager, footer { margin-left: 42px; margin-right: 42px; }
+  .outcome-panel, .interview-assessment, .practice-section, .completion-section, .pager, footer { margin-left: 42px; margin-right: 42px; }
   .language-track { margin-left: 42px; margin-right: 42px; }
-  .chapter-opening, .mental-model, .comparison-section, .case-study-section, .guided-lab-section, .review-section { margin-left: 42px; margin-right: 42px; }
+  .chapter-opening, .mental-model, .comparison-section, .interview-section, .case-study-section, .guided-lab-section, .review-section { margin-left: 42px; margin-right: 42px; }
   .volume-note, .deep-toc, .deep-volume, .quick-reference-heading { margin-left: 42px; margin-right: 42px; }
   .chapter-preface { margin-left: 75px; margin-right: 75px; }
   .goal-grid { grid-template-columns: repeat(2, 1fr); }
@@ -351,9 +403,20 @@ footer p { margin: 0; }
   .hero-copy { position: relative; padding: 0; border: 0; }
   .hero-copy h1 { font-size: 39px; }
   .hero-copy p { font-size: 15px; }
-  .outcome-panel, .practice-section, .completion-section, .pager, footer { margin-left: 18px; margin-right: 18px; }
+  .outcome-panel, .interview-assessment, .practice-section, .completion-section, .pager, footer { margin-left: 18px; margin-right: 18px; }
   .language-track { grid-template-columns: 1fr; gap: 10px; margin: -36px 18px 45px; }
-  .chapter-opening, .mental-model, .comparison-section, .case-study-section, .guided-lab-section, .review-section { margin: 52px 18px; }
+  .chapter-opening, .mental-model, .comparison-section, .interview-section, .case-study-section, .guided-lab-section, .review-section { margin: 52px 18px; }
+  .interview-assessment, .interview-section { padding: 28px 22px; }
+  .assessment-copy h2, .interview-heading h2 { font-size: 25px; }
+  .assessment-standards { grid-template-columns: 1fr; }
+  .algorithm-bridge { grid-template-columns: 1fr; gap: 18px; }
+  .algorithm-bridge ul { columns: 1; }
+  .interview-qa summary { display: block; padding: 18px 0; font-size: 16px; }
+  .interview-qa summary span { display: block; margin-bottom: 7px; }
+  .interview-qa details > div { padding: 0 0 20px; }
+  .interview-drill-grid { grid-template-columns: 1fr; }
+  .interview-drill-grid article { padding: 23px 20px; }
+  .interview-traps { grid-template-columns: 1fr; gap: 12px; }
   .volume-note, .deep-toc, .deep-volume, .quick-reference-heading { margin-left: 18px; margin-right: 18px; }
   .volume-note { grid-template-columns: 1fr; gap: 22px; padding: 28px 23px; }
   .volume-note h2 { font-size: 26px; }
