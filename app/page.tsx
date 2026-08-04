@@ -484,72 +484,64 @@ function CodeExample({ code, language, setLanguage }: { code: NonNullable<Lesson
   );
 }
 
+function renderInline(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={`${part}-${index}`}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
 function DeepUnitView({ unit, language }: { unit: DeepUnit; language: Language }) {
   const languageLabel = languages.find((item) => item.id === language)?.label ?? language;
   return (
     <article className="deep-unit" id={unit.id}>
       <header className="deep-unit-header">
         <div>
-          <span className="deep-unit-kicker">TEXTBOOK UNIT · {unit.readingTime}</span>
+          <span className="deep-unit-kicker">教材正文 · {unit.readingTime}</span>
           <h2>{unit.title}</h2>
         </div>
         <a href="#chapter-top" aria-label="返回本章顶部">↑</a>
       </header>
 
-      <p className="deep-question">{unit.question}</p>
+      <p className="deep-question">{renderInline(unit.question)}</p>
       <div className="deep-prose">
         {unit.paragraphs.map((paragraph, index) => (
-          <p key={paragraph}><span>{String(index + 1).padStart(2, "0")}</span>{paragraph}</p>
+          <p key={paragraph}><span>{String(index + 1).padStart(2, "0")}</span>{renderInline(paragraph)}</p>
         ))}
       </div>
 
-      <section className="mechanism-walkthrough">
-        <div className="subsection-heading"><span>MECHANISM</span><h3>从入口到证据：机制推演</h3></div>
-        <ol>
-          {unit.mechanismSteps.map((step, index) => (
-            <li key={step.title}>
-              <b>{String(index + 1).padStart(2, "0")}</b>
-              <div><h4>{step.title}</h4><p>{step.detail}</p></div>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section className="unit-case">
-        <div className="subsection-heading light"><span>FAILURE LAB</span><h3>真实故障：从症状追到根因</h3></div>
-        <p className="unit-case-symptom">{unit.caseStudy.symptom}</p>
-        <div className="unit-case-columns">
-          <div><h4>证据</h4><ul>{unit.caseStudy.evidence.map((item) => <li key={item}>{item}</li>)}</ul></div>
-          <div><h4>推理</h4><ol>{unit.caseStudy.analysis.map((item) => <li key={item}>{item}</li>)}</ol></div>
-          <div><h4>修复</h4><ul>{unit.caseStudy.correction.map((item) => <li key={item}>{item}</li>)}</ul></div>
+      <section className="unit-example">
+        <div className="subsection-heading"><span>EXAMPLE</span><h3>举个例子</h3></div>
+        <p>{renderInline(unit.caseStudy.symptom)}</p>
+        <div className="example-columns">
+          <article>
+            <b>容易误判</b>
+            <p>{renderInline(unit.caseStudy.analysis[0])}</p>
+          </article>
+          <article>
+            <b>正确看法</b>
+            <p>{renderInline(unit.caseStudy.correction[0])}</p>
+          </article>
         </div>
       </section>
 
       <section className="language-deep-dive">
-        <div className="subsection-heading"><span>LANGUAGE TRACK</span><h3>{languageLabel} 实现与审查路线</h3></div>
-        {unit.languageComparison[language].map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+        <div className="subsection-heading"><span>LANGUAGE NOTE</span><h3>{languageLabel} 中怎么落地</h3></div>
+        {unit.languageComparison[language].map((paragraph) => <p key={paragraph}>{renderInline(paragraph)}</p>)}
       </section>
 
       <section className="unit-lab">
         <div className="unit-lab-intro">
-          <span>HANDS-ON</span>
-          <h3>引导实验</h3>
-          <p>{unit.lab.goal}</p>
+          <span>PRACTICE</span>
+          <h3>小练习</h3>
+          <p>{renderInline(unit.lab.goal)}</p>
         </div>
         <div className="unit-lab-body">
-          <ol>{unit.lab.steps.map((step) => <li key={step}>{step}</li>)}</ol>
+          <ol>{unit.lab.steps.map((step) => <li key={step}>{renderInline(step)}</li>)}</ol>
           <div className="unit-lab-checks">{unit.lab.checks.map((check) => <span key={check}>✓ {check}</span>)}</div>
         </div>
-      </section>
-
-      <section className="unit-review">
-        <div className="subsection-heading"><span>REVIEW</span><h3>练习与参考答案</h3></div>
-        {unit.review.map((item, index) => (
-          <details key={item.question}>
-            <summary><b>Q{index + 1}</b>{item.question}</summary>
-            <p>{item.answer}</p>
-          </details>
-        ))}
       </section>
     </article>
   );
@@ -706,9 +698,9 @@ export default function Home() {
 
         <section className="mental-model">
           <div className="model-intro">
-            <span className="section-kicker">MENTAL MODEL</span>
+            <span className="section-kicker">KEY IDEA</span>
             <h2>{expansion.mentalModel.title}</h2>
-            <p>先建立这张思维地图，再进入具体概念。遇到新框架或新语言时，仍然使用同一组问题分析。</p>
+            <p>先抓住这一章最重要的理解线索，再进入具体概念。遇到新框架或新语言时，也可以用这组问题读代码。</p>
           </div>
           <ol className="model-steps">
             {expansion.mentalModel.steps.map((step, index) => (
@@ -721,7 +713,7 @@ export default function Home() {
         </section>
 
         <section className="comparison-section">
-          <span className="section-kicker">DECISION TABLE</span>
+          <span className="section-kicker">HOW TO CHOOSE</span>
           <h2>{expansion.comparison.title}</h2>
           <div className="table-scroll">
             <table>
@@ -735,13 +727,13 @@ export default function Home() {
 
         <section className="volume-note">
           <div>
-            <span className="section-kicker">FULL TEXTBOOK EDITION</span>
-            <h2>本章完整教学正文</h2>
-            <p>下面不是知识清单，而是需要逐节学习的正文。每个单元都包含机制推演、真实故障、三语言路线、可复现实验和带答案练习。</p>
+            <span className="section-kicker">TEXTBOOK EDITION</span>
+            <h2>本章教材正文</h2>
+            <p>下面以连续讲解为主，例子只用于说明知识点。每节都刻意避免平行模板，重点内容会用粗体标出，章末再集中放练习和速查。</p>
           </div>
           <div className="volume-stats">
-            <b>{deepChapter.units.length}</b><span>个深度单元</span>
-            <b>{Math.round(deepVolumeCjkCharacters / 10000)} 万+</b><span>全书正文汉字</span>
+            <b>{deepChapter.units.length}</b><span>个教学小节</span>
+            <b>{Math.round(deepVolumeCjkCharacters / 10000)} 万</b><span>全书可读正文约数</span>
           </div>
         </section>
 
@@ -793,20 +785,20 @@ export default function Home() {
         <section className="case-study-section">
           <div className="case-heading">
             <span className="case-number">CASE {String(active.number).padStart(2, "0")}</span>
-            <div><span className="section-kicker">REAL FAILURE ANALYSIS</span><h2>{expansion.caseStudy.title}</h2></div>
+            <div><span className="section-kicker">EXAMPLE</span><h2>{expansion.caseStudy.title}</h2></div>
           </div>
           <p className="case-situation">{expansion.caseStudy.situation}</p>
           <div className="case-grid">
-            <article><h3>观察到的证据</h3><ul>{expansion.caseStudy.evidence.map((item) => <li key={item}>{item}</li>)}</ul></article>
-            <article><h3>逐步推理</h3><ol>{expansion.caseStudy.reasoning.map((item) => <li key={item}>{item}</li>)}</ol></article>
-            <article><h3>工程修复</h3><ul>{expansion.caseStudy.solution.map((item) => <li key={item}>{item}</li>)}</ul></article>
+            <article><h3>看到什么</h3><ul>{expansion.caseStudy.evidence.map((item) => <li key={item}>{item}</li>)}</ul></article>
+            <article><h3>为什么会这样</h3><ol>{expansion.caseStudy.reasoning.map((item) => <li key={item}>{item}</li>)}</ol></article>
+            <article><h3>应该怎么改</h3><ul>{expansion.caseStudy.solution.map((item) => <li key={item}>{item}</li>)}</ul></article>
           </div>
           <blockquote><b>案例结论</b><p>{expansion.caseStudy.conclusion}</p></blockquote>
         </section>
 
         <section className="guided-lab-section">
           <div className="lab-copy">
-            <span className="section-kicker">GUIDED LAB</span>
+            <span className="section-kicker">PRACTICE</span>
             <h2>{expansion.lab.title}</h2>
             <p>{expansion.lab.brief}</p>
             <div className="deliverable"><b>最终交付物</b><span>{expansion.lab.deliverable}</span></div>

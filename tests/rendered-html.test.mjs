@@ -1,47 +1,42 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import test from "node:test";
 
-const developmentPreviewMeta =
-  /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;
+test("builds the GitHub Pages textbook bundle", async () => {
+  const distRoot = new URL("../dist/", import.meta.url);
+  const indexHtml = await readFile(new URL("index.html", distRoot), "utf8");
 
-test("renders development preview metadata", async () => {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
+  assert.match(indexHtml, /<div id="root"><\/div>/);
+  assert.match(indexHtml, /\/agent-backend-textbook\/assets\/index-[^"]+\.js/);
+  assert.match(indexHtml, /\/agent-backend-textbook\/assets\/index-[^"]+\.css/);
 
-  const response = await worker.fetch(
-    new Request("http://localhost/", {
-      headers: { accept: "text/html" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
+  const scriptPath = indexHtml.match(/src="\/agent-backend-textbook\/([^"]+\.js)"/)?.[1];
+  const stylePath = indexHtml.match(/href="\/agent-backend-textbook\/([^"]+\.css)"/)?.[1];
+  assert.ok(scriptPath, "expected built script asset");
+  assert.ok(stylePath, "expected built stylesheet asset");
 
-  assert.equal(response.status, 200);
-  assert.match(
-    response.headers.get("content-type") ?? "",
-    /^text\/html\b/i,
-  );
-  const html = await response.text();
-  assert.match(html, developmentPreviewMeta);
-  assert.match(html, /把一段代码看成五层契约/);
-  assert.match(html, /一段“看起来没问题”的模型调用为什么拖垮服务/);
-  assert.match(html, /理解检查与参考答案/);
-  assert.match(html, /本章完整教学正文/);
-  assert.match(html, /值、引用与所有权/);
-  assert.match(html, /从入口到证据：机制推演/);
-  assert.match(html, /引导实验/);
+  const bundle = await readFile(join(distRoot.pathname, scriptPath), "utf8");
+  const styles = await readFile(join(distRoot.pathname, stylePath), "utf8");
 
-  const cjkCharacters = html.match(/[\u3400-\u9fff]/g) ?? [];
+  assert.match(bundle, /把一段代码看成五层契约/);
+  assert.match(bundle, /一段“看起来没问题”的模型调用为什么拖垮服务/);
+  assert.match(bundle, /本章教材正文/);
+  assert.match(bundle, /值、引用与所有权/);
+  assert.match(bundle, /举个例子/);
+  assert.match(bundle, /小练习/);
+  assert.match(styles, /\.unit-example/);
+  assert.match(styles, /font-size:18px/);
+  assert.doesNotMatch(bundle, /机制推演/);
+  assert.doesNotMatch(bundle, /逐步推理/);
+
+  const cjkCharacters = bundle.match(/[\u3400-\u9fff]/g) ?? [];
   assert.ok(
-    cjkCharacters.length >= 35_000,
-    `chapter 1 should render as full textbook prose; got ${cjkCharacters.length} CJK characters`,
+    cjkCharacters.length >= 45_000,
+    `bundle should still contain textbook seeds and prose templates; got ${cjkCharacters.length} CJK characters`,
+  );
+  assert.ok(
+    cjkCharacters.length <= 80_000,
+    `bundle should be shorter than the previous template-heavy edition; got ${cjkCharacters.length} CJK characters`,
   );
 });
