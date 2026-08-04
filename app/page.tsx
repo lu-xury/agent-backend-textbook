@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { algorithmInterviewTrack, interviewAssessment, interviewChapters, interviewCjkCharacters } from "./interview-track";
+import type { InterviewChapter } from "./interview-track";
 import { chapterExpansions } from "./textbook-expansions";
 import { deepChapters, deepVolumeCjkCharacters } from "./textbook-volume";
 import type { DeepUnit } from "./volume/types";
@@ -563,6 +565,81 @@ function DeepUnitView({ unit, language }: { unit: DeepUnit; language: Language }
   );
 }
 
+function InterviewAssessmentView() {
+  return (
+    <section className="interview-assessment">
+      <div className="assessment-copy">
+        <span className="section-kicker">TEACHER VERDICT</span>
+        <h2>是否达到大厂后端面试强度？</h2>
+        <p>{renderInline(`**${interviewAssessment.verdict}**`)}</p>
+        <p>{interviewAssessment.upgradedTo}</p>
+      </div>
+      <div className="assessment-standards">
+        {interviewAssessment.standards.map((standard, index) => (
+          <article key={standard}>
+            <b>{String(index + 1).padStart(2, "0")}</b>
+            <p>{renderInline(standard)}</p>
+          </article>
+        ))}
+      </div>
+      <div className="algorithm-bridge">
+        <div>
+          <span>CODING INTERVIEW</span>
+          <h3>{algorithmInterviewTrack.title}</h3>
+          <p>{algorithmInterviewTrack.note}</p>
+        </div>
+        <ul>
+          {algorithmInterviewTrack.drills.map((drill) => <li key={drill}>{renderInline(drill)}</li>)}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function InterviewChapterView({ chapter }: { chapter: InterviewChapter }) {
+  return (
+    <section className="interview-section">
+      <div className="interview-heading">
+        <span className="section-kicker">INTERVIEW BOOST</span>
+        <h2>大厂面试强化</h2>
+        <p>{chapter.verdict}</p>
+      </div>
+
+      <div className="interview-focus-row">
+        {chapter.focus.map((item) => <span key={item}>{item}</span>)}
+      </div>
+
+      <div className="interview-qa">
+        {chapter.questions.map((item, index) => (
+          <details key={item.question} open={index === 0}>
+            <summary><span>高频题 {index + 1}</span>{item.question}</summary>
+            <div>
+              <p>{renderInline(item.answer)}</p>
+              <p className="follow-up"><b>追问：</b>{item.followUp}</p>
+            </div>
+          </details>
+        ))}
+      </div>
+
+      <div className="interview-drill-grid">
+        {chapter.drills.map((drill) => (
+          <article key={drill.title}>
+            <span>训练题</span>
+            <h3>{drill.title}</h3>
+            <p>{drill.prompt}</p>
+            <ul>{drill.strongSignals.map((signal) => <li key={signal}>{renderInline(signal)}</li>)}</ul>
+          </article>
+        ))}
+      </div>
+
+      <div className="interview-traps">
+        <b>常见失分点</b>
+        <div>{chapter.traps.map((trap) => <span key={trap}>{trap}</span>)}</div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   const [activeNumber, setActiveNumber] = useState(1);
   const [language, setLanguage] = useState<Language>("python");
@@ -600,13 +677,14 @@ export default function Home() {
     const term = query.trim().toLowerCase();
     if (!term) return chapters;
     return chapters.filter((chapter) =>
-      `${chapter.number} ${chapter.short} ${chapter.title} ${chapter.subtitle} ${chapter.goals.join(" ")} ${chapter.lessons.map((l) => `${l.title} ${l.lead}`).join(" ")} ${deepChapters[chapter.number].units.map((unit) => unit.title).join(" ")}`.toLowerCase().includes(term),
+      `${chapter.number} ${chapter.short} ${chapter.title} ${chapter.subtitle} ${chapter.goals.join(" ")} ${chapter.lessons.map((l) => `${l.title} ${l.lead}`).join(" ")} ${deepChapters[chapter.number].units.map((unit) => unit.title).join(" ")} ${interviewChapters[chapter.number].focus.join(" ")} ${interviewChapters[chapter.number].questions.map((item) => item.question).join(" ")} ${interviewChapters[chapter.number].drills.map((item) => item.title).join(" ")}`.toLowerCase().includes(term),
     );
   }, [query]);
 
   const active = chapters[activeNumber - 1];
   const expansion = chapterExpansions[activeNumber];
   const deepChapter = deepChapters[activeNumber];
+  const activeInterview = interviewChapters[activeNumber];
   const totalChecks = chapters.reduce((sum, chapter) => sum + chapter.done.length, 0);
   const finishedChecks = Object.values(completed).filter(Boolean).length;
   const progress = Math.round((finishedChecks / totalChecks) * 100);
@@ -704,6 +782,8 @@ export default function Home() {
           <span className="track-hint">切换页顶语言以查看本章对应的学习重点</span>
         </section>
 
+        <InterviewAssessmentView />
+
         <section className="chapter-opening">
           <span className="section-kicker">CHAPTER QUESTION</span>
           <h2>{expansion.opening.question}</h2>
@@ -741,6 +821,8 @@ export default function Home() {
           </div>
         </section>
 
+        <InterviewChapterView chapter={activeInterview} />
+
         <section className="volume-note">
           <div>
             <span className="section-kicker">TEXTBOOK EDITION</span>
@@ -750,6 +832,7 @@ export default function Home() {
           <div className="volume-stats">
             <b>{deepChapter.units.length}</b><span>个教学小节</span>
             <b>{Math.round(deepVolumeCjkCharacters / 10000)} 万</b><span>全书可读正文约数</span>
+            <b>{Math.round(interviewCjkCharacters / 10000)} 万</b><span>面试强化正文约数</span>
           </div>
         </section>
 
