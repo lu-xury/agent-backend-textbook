@@ -25,7 +25,11 @@ test("builds the GitHub Pages textbook bundle", async () => {
   assert.match(bundle, /值、引用与所有权/);
   assert.match(bundle, /举个例子/);
   assert.match(bundle, /小练习/);
+  assert.match(bundle, /大厂面试追问/);
+  assert.match(bundle, /常见扣分点/);
+  assert.match(bundle, /复杂度、性能和可观测性/);
   assert.match(styles, /\.unit-example/);
+  assert.match(styles, /\.interview-drill/);
   assert.match(styles, /font-size:18px/);
   assert.doesNotMatch(bundle, /机制推演/);
   assert.doesNotMatch(bundle, /逐步推理/);
@@ -36,7 +40,7 @@ test("builds the GitHub Pages textbook bundle", async () => {
     `bundle should still contain textbook seeds and prose templates; got ${cjkCharacters.length} CJK characters`,
   );
   assert.ok(
-    cjkCharacters.length <= 80_000,
+    cjkCharacters.length <= 115_000,
     `bundle should be shorter than the previous template-heavy edition; got ${cjkCharacters.length} CJK characters`,
   );
 });
