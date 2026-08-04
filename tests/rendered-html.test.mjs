@@ -34,4 +34,14 @@ test("renders development preview metadata", async () => {
   assert.match(html, /把一段代码看成五层契约/);
   assert.match(html, /一段“看起来没问题”的模型调用为什么拖垮服务/);
   assert.match(html, /理解检查与参考答案/);
+  assert.match(html, /本章完整教学正文/);
+  assert.match(html, /值、引用与所有权/);
+  assert.match(html, /从入口到证据：机制推演/);
+  assert.match(html, /引导实验/);
+
+  const cjkCharacters = html.match(/[\u3400-\u9fff]/g) ?? [];
+  assert.ok(
+    cjkCharacters.length >= 35_000,
+    `chapter 1 should render as full textbook prose; got ${cjkCharacters.length} CJK characters`,
+  );
 });

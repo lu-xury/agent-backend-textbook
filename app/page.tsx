@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { chapterExpansions } from "./textbook-expansions";
+import { deepChapters, deepVolumeCjkCharacters } from "./textbook-volume";
+import type { DeepUnit } from "./volume/types";
 
 type Language = "python" | "cpp" | "rust";
 type Level = "P0" | "P1";
@@ -482,6 +484,77 @@ function CodeExample({ code, language, setLanguage }: { code: NonNullable<Lesson
   );
 }
 
+function DeepUnitView({ unit, language }: { unit: DeepUnit; language: Language }) {
+  const languageLabel = languages.find((item) => item.id === language)?.label ?? language;
+  return (
+    <article className="deep-unit" id={unit.id}>
+      <header className="deep-unit-header">
+        <div>
+          <span className="deep-unit-kicker">TEXTBOOK UNIT · {unit.readingTime}</span>
+          <h2>{unit.title}</h2>
+        </div>
+        <a href="#chapter-top" aria-label="返回本章顶部">↑</a>
+      </header>
+
+      <p className="deep-question">{unit.question}</p>
+      <div className="deep-prose">
+        {unit.paragraphs.map((paragraph, index) => (
+          <p key={paragraph}><span>{String(index + 1).padStart(2, "0")}</span>{paragraph}</p>
+        ))}
+      </div>
+
+      <section className="mechanism-walkthrough">
+        <div className="subsection-heading"><span>MECHANISM</span><h3>从入口到证据：机制推演</h3></div>
+        <ol>
+          {unit.mechanismSteps.map((step, index) => (
+            <li key={step.title}>
+              <b>{String(index + 1).padStart(2, "0")}</b>
+              <div><h4>{step.title}</h4><p>{step.detail}</p></div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="unit-case">
+        <div className="subsection-heading light"><span>FAILURE LAB</span><h3>真实故障：从症状追到根因</h3></div>
+        <p className="unit-case-symptom">{unit.caseStudy.symptom}</p>
+        <div className="unit-case-columns">
+          <div><h4>证据</h4><ul>{unit.caseStudy.evidence.map((item) => <li key={item}>{item}</li>)}</ul></div>
+          <div><h4>推理</h4><ol>{unit.caseStudy.analysis.map((item) => <li key={item}>{item}</li>)}</ol></div>
+          <div><h4>修复</h4><ul>{unit.caseStudy.correction.map((item) => <li key={item}>{item}</li>)}</ul></div>
+        </div>
+      </section>
+
+      <section className="language-deep-dive">
+        <div className="subsection-heading"><span>LANGUAGE TRACK</span><h3>{languageLabel} 实现与审查路线</h3></div>
+        {unit.languageComparison[language].map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+      </section>
+
+      <section className="unit-lab">
+        <div className="unit-lab-intro">
+          <span>HANDS-ON</span>
+          <h3>引导实验</h3>
+          <p>{unit.lab.goal}</p>
+        </div>
+        <div className="unit-lab-body">
+          <ol>{unit.lab.steps.map((step) => <li key={step}>{step}</li>)}</ol>
+          <div className="unit-lab-checks">{unit.lab.checks.map((check) => <span key={check}>✓ {check}</span>)}</div>
+        </div>
+      </section>
+
+      <section className="unit-review">
+        <div className="subsection-heading"><span>REVIEW</span><h3>练习与参考答案</h3></div>
+        {unit.review.map((item, index) => (
+          <details key={item.question}>
+            <summary><b>Q{index + 1}</b>{item.question}</summary>
+            <p>{item.answer}</p>
+          </details>
+        ))}
+      </section>
+    </article>
+  );
+}
+
 export default function Home() {
   const [activeNumber, setActiveNumber] = useState(1);
   const [language, setLanguage] = useState<Language>("python");
@@ -519,12 +592,13 @@ export default function Home() {
     const term = query.trim().toLowerCase();
     if (!term) return chapters;
     return chapters.filter((chapter) =>
-      `${chapter.number} ${chapter.short} ${chapter.title} ${chapter.subtitle} ${chapter.goals.join(" ")} ${chapter.lessons.map((l) => `${l.title} ${l.lead}`).join(" ")}`.toLowerCase().includes(term),
+      `${chapter.number} ${chapter.short} ${chapter.title} ${chapter.subtitle} ${chapter.goals.join(" ")} ${chapter.lessons.map((l) => `${l.title} ${l.lead}`).join(" ")} ${deepChapters[chapter.number].units.map((unit) => unit.title).join(" ")}`.toLowerCase().includes(term),
     );
   }, [query]);
 
   const active = chapters[activeNumber - 1];
   const expansion = chapterExpansions[activeNumber];
+  const deepChapter = deepChapters[activeNumber];
   const totalChecks = chapters.reduce((sum, chapter) => sum + chapter.done.length, 0);
   const finishedChecks = Object.values(completed).filter(Boolean).length;
   const progress = Math.round((finishedChecks / totalChecks) * 100);
@@ -585,7 +659,7 @@ export default function Home() {
 
       {menuOpen && <button className="overlay" onClick={() => setMenuOpen(false)} aria-label="关闭目录" />}
 
-      <article className="content">
+      <article className="content" id="chapter-top">
         <div className="topline">
           <span>BACKEND FOUNDATIONS</span>
           <div className="global-language">
@@ -657,6 +731,36 @@ export default function Home() {
               </tbody>
             </table>
           </div>
+        </section>
+
+        <section className="volume-note">
+          <div>
+            <span className="section-kicker">FULL TEXTBOOK EDITION</span>
+            <h2>本章完整教学正文</h2>
+            <p>下面不是知识清单，而是需要逐节学习的正文。每个单元都包含机制推演、真实故障、三语言路线、可复现实验和带答案练习。</p>
+          </div>
+          <div className="volume-stats">
+            <b>{deepChapter.units.length}</b><span>个深度单元</span>
+            <b>{Math.round(deepVolumeCjkCharacters / 10000)} 万+</b><span>全书正文汉字</span>
+          </div>
+        </section>
+
+        <nav className="deep-toc" aria-label="本章完整教学目录">
+          {deepChapter.units.map((unit) => <a key={unit.id} href={`#${unit.id}`}>{unit.title}</a>)}
+        </nav>
+
+        <section className="chapter-preface">
+          {deepChapter.preface.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+        </section>
+
+        <div className="deep-volume">
+          {deepChapter.units.map((unit) => <DeepUnitView key={unit.id} unit={unit} language={language} />)}
+        </div>
+
+        <section className="quick-reference-heading">
+          <span className="section-kicker">QUICK REFERENCE</span>
+          <h2>本章概念速查</h2>
+          <p>完成上面的详细学习后，用这一部分复习关键概念与代码示例。它不能代替正文。</p>
         </section>
 
         <div className="reading-layout">
