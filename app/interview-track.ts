@@ -20,8 +20,8 @@ export type InterviewChapter = {
 };
 
 export const interviewAssessment = {
-  verdict: "老师判断：上一版已经适合打基础，但还不能算大厂后端面试强度。它讲清了概念，却没有逼你练到“能在面试里答出来、写出来、追问下扛住”的程度。",
-  upgradedTo: "这一版新增面试强化层：每章给出高频题、标准答题骨架、追问题、代码或设计训练，以及最容易失分的表达。目标不是把教材改成题库，而是让基础知识自然长出面试战斗力。",
+  verdict: "老师判断：上一版已经适合打基础，但还不能算一线后端工程强度。它讲清了概念，却没有把你逼到“能讲清、写出、被追问后仍能自洽”的程度。",
+  upgradedTo: "这一版新增能力强化层：每章给出核心追问、标准回答骨架、延伸问题、代码或设计训练，以及最容易暴露薄弱点的表达。目标不是把教材改成题库，而是让基础知识自然长出工程战斗力。",
   standards: [
     "能在 2 分钟内讲清概念：定义、适用场景、反例、常见坑。",
     "能在 5 分钟内落到工程：接口、SQL、并发控制、缓存策略、监控指标。",
@@ -32,7 +32,7 @@ export const interviewAssessment = {
 
 export const algorithmInterviewTrack = {
   title: "算法与代码题补强",
-  note: "大厂后端面试通常不会只问八股。教材主线是后端系统，但你还必须并行训练算法题。建议每天 45 到 60 分钟，先覆盖高频模板，再追求速度。",
+  note: "高水平后端训练通常不会只看系统知识。教材主线是后端系统，但你还必须并行训练算法题。建议每天 45 到 60 分钟，先覆盖高频模板，再追求速度。",
   drills: [
     "数组与哈希：两数之和、三数之和、最长连续序列。重点说清 **O(n)** 时间和去重边界。",
     "双指针与滑动窗口：最长无重复子串、最小覆盖子串。重点说清窗口何时扩张、何时收缩。",
@@ -46,37 +46,37 @@ export const algorithmInterviewTrack = {
 };
 
 export const mockInterviewGauntlet = {
-  title: "六套模拟面试卷",
+  title: "六套综合实战卷",
   note: "当你把 13 章学完，不要立刻说“我准备好了”。用下面六套卷子自测：每套限时 45 到 60 分钟，要求边讲边写，回答必须能被追问到代码、SQL、指标或状态机。",
   rounds: [
     {
-      name: "算法与工程代码轮",
+      name: "算法与工程代码卷",
       scenario: "手写 LRU Cache、令牌桶限流器和一道滑动窗口题。要求先讲不变量，再写代码，最后分析复杂度和并发改造。",
       mustCover: ["O(1) 数据结构组合", "容量为 0、重复 key、并发访问", "窗口扩张收缩条件", "测试用例覆盖边界"],
     },
     {
-      name: "后端八股深挖轮",
+      name: "后端基础深挖卷",
       scenario: "连续回答 TCP/TLS、HTTP 幂等、事务隔离、索引、缓存击穿、线程与协程、JWT 和 SSRF。",
       mustCover: ["每题先一句话定义", "给出反例和线上故障", "说明监控或验证证据", "不把框架默认行为当答案"],
     },
     {
-      name: "数据库与并发轮",
+      name: "数据库与并发卷",
       scenario: "设计 run/task/tool_call 表，并处理两个 Worker 同时领取任务、模型扣费成功但进程崩溃、事件流按 sequence 恢复。",
       mustCover: ["UNIQUE、外键和 CHECK", "SELECT FOR UPDATE 或原子 UPDATE", "租约和幂等键", "EXPLAIN 与复合索引"],
     },
     {
-      name: "系统设计轮",
+      name: "系统设计卷",
       scenario: "设计支持 10 万并发 Agent Run 的后端平台，要求覆盖 API、队列、Worker、模型网关、SSE、PostgreSQL、Redis 和观测。",
       mustCover: ["容量估算先行", "控制面和执行面隔离", "状态不放单机内存", "模型故障降级和成本预算"],
     },
     {
-      name: "故障排查轮",
+      name: "故障排查卷",
       scenario: "线上出现三连故障：SSE 不流式、Worker 被 OOM kill、重复创建收费 run。你要按证据定位根因并给出短期止血与长期修复。",
       mustCover: ["代理缓冲与心跳", "cgroup 内存和峰值 RSS", "幂等键与结果未知", "回归测试和告警补齐"],
     },
     {
-      name: "项目深挖轮",
-      scenario: "围绕你的 Agent Runtime 项目讲 15 分钟，面试官追问状态机、工具权限、上下文压缩、模型 fallback、成本和安全。",
+      name: "项目深挖卷",
+      scenario: "围绕你的 Agent Runtime 项目讲 15 分钟，评审继续追问状态机、工具权限、上下文压缩、模型 fallback、成本和安全。",
       mustCover: ["讲清你负责的边界", "用真实取舍而非口号回答", "能画出 run 事件时间线", "承认限制并给出演进路线"],
     },
   ],
@@ -85,12 +85,12 @@ export const mockInterviewGauntlet = {
 export const interviewChapters: Record<number, InterviewChapter> = {
   1: {
     number: 1,
-    verdict: "本章如果只学到类型、函数、异常的概念，还达不到面试要求。大厂会追问你：为什么这样设计边界、异常会不会吞掉根因、异步任务谁负责取消、代码题能否手写到没有明显边界漏洞。",
+    verdict: "本章如果只学到类型、函数、异常的概念，还达不到工程要求。一线团队会继续追问你：为什么这样设计边界、异常会不会吞掉根因、异步任务谁负责取消、代码题能否手写到没有明显边界漏洞。",
     focus: ["值语义与引用语义", "异常与 Result 的取舍", "资源释放", "异步任务所有权", "可测试接口设计"],
     questions: [
       {
         question: "Python、C++、Rust 在对象生命周期上最大的差异是什么？",
-        answer: "**Python 靠引用计数和 GC 管对象生命，C++ 靠开发者用 RAII 绑定作用域，Rust 用所有权和借用在编译期限制悬空引用。** 面试时不要只说语法，要落到后端资源：连接、锁、文件、后台任务都必须有明确拥有者。",
+        answer: "**Python 靠引用计数和 GC 管对象生命，C++ 靠开发者用 RAII 绑定作用域，Rust 用所有权和借用在编译期限制悬空引用。** 回答时不要只说语法，要落到后端资源：连接、锁、文件、后台任务都必须有明确拥有者。",
         followUp: "如果一个后台任务捕获了请求级数据库连接，会发生什么？你应该把连接生命周期改到哪里？",
       },
       {
@@ -120,7 +120,7 @@ export const interviewChapters: Record<number, InterviewChapter> = {
   },
   2: {
     number: 2,
-    verdict: "本章要达到面试强度，必须能把现象还原成操作系统事实。面试官常给一句“服务偶发挂掉”或“端口访问不了”，看你能不能问出 PID、信号、监听地址、cgroup、文件描述符这些证据。",
+    verdict: "本章要达到工程强度，必须能把现象还原成操作系统事实。技术评审常给一句“服务偶发挂掉”或“端口访问不了”，看你能不能问出 PID、信号、监听地址、cgroup、文件描述符这些证据。",
     focus: ["进程线程协程", "虚拟内存与 OOM", "文件描述符", "信号与优雅退出", "容器网络和资源限制"],
     questions: [
       {
@@ -155,7 +155,7 @@ export const interviewChapters: Record<number, InterviewChapter> = {
   },
   3: {
     number: 3,
-    verdict: "网络章节达到面试强度后，你不能只背三次握手、四次挥手。你要能解释一次请求慢在哪里、为什么重试会重复写、SSE 为什么上线后不流式、代理和浏览器分别改变了什么。",
+    verdict: "网络章节达到工程强度后，你不能只背三次握手、四次挥手。你要能解释一次请求慢在哪里、为什么重试会重复写、SSE 为什么上线后不流式、代理和浏览器分别改变了什么。",
     focus: ["DNS/TCP/TLS 阶段定位", "HTTP 语义", "超时与 deadline", "重试和幂等", "SSE 与 WebSocket"],
     questions: [
       {
@@ -190,7 +190,7 @@ export const interviewChapters: Record<number, InterviewChapter> = {
   },
   4: {
     number: 4,
-    verdict: "框架章节的面试重点不是背 FastAPI、Drogon 或 Axum API，而是能把请求处理拆成协议、校验、授权、业务、事务、错误映射和观测。面试官会看你有没有边界感。",
+    verdict: "框架章节的训练重点不是背 FastAPI、Drogon 或 Axum API，而是能把请求处理拆成协议、校验、授权、业务、事务、错误映射和观测。评审会看你有没有边界感。",
     focus: ["Router-Service-Repository", "DTO 与领域模型", "统一错误模型", "中间件边界", "API 兼容演进"],
     questions: [
       {
@@ -225,7 +225,7 @@ export const interviewChapters: Record<number, InterviewChapter> = {
   },
   5: {
     number: 5,
-    verdict: "数据库是后端面试核心战场。本章要提升到能手写 SQL、解释索引、讲清事务隔离、处理并发写入和 migration。只会说“用 ORM”远远不够。",
+    verdict: "数据库是后端核心战场。本章要提升到能手写 SQL、解释索引、讲清事务隔离、处理并发写入和 migration。只会说“用 ORM”远远不够。",
     focus: ["关系建模", "SQL 与 JOIN", "索引和执行计划", "事务隔离与锁", "迁移和连接池"],
     questions: [
       {
@@ -260,7 +260,7 @@ export const interviewChapters: Record<number, InterviewChapter> = {
   },
   6: {
     number: 6,
-    verdict: "缓存章节的面试强度在于能说清真源、一致性、异常和限流。面试官不想听“加 Redis 变快”，而是要听你如何避免越权旧数据、缓存风暴、锁误用和限流维度错误。",
+    verdict: "缓存章节的工程强度在于能说清真源、一致性、异常和限流。评审不想听“加 Redis 变快”，而是要听你如何避免越权旧数据、缓存风暴、锁误用和限流维度错误。",
     focus: ["cache-aside", "TTL 与淘汰", "穿透击穿雪崩", "分布式锁", "限流和配额"],
     questions: [
       {
@@ -295,7 +295,7 @@ export const interviewChapters: Record<number, InterviewChapter> = {
   },
   7: {
     number: 7,
-    verdict: "并发章节是区分普通 CRUD 和高水平后端的关键。面试强度要求你能解释竞态、锁、背压、队列语义、幂等和恢复；还能写出有界并发或生产者消费者代码。",
+    verdict: "并发章节是区分普通 CRUD 和高水平后端的关键。工程强度要求你能解释竞态、锁、背压、队列语义、幂等和恢复；还能写出有界并发或生产者消费者代码。",
     focus: ["事件循环", "结构化并发", "锁和竞态", "有界队列", "至少一次投递与幂等"],
     questions: [
       {
@@ -330,7 +330,7 @@ export const interviewChapters: Record<number, InterviewChapter> = {
   },
   8: {
     number: 8,
-    verdict: "安全章节要达到大厂面试水平，必须把认证、授权、输入、Secret、审计和 Agent 工具边界讲成确定性策略。尤其不能把 Prompt 当安全边界。",
+    verdict: "安全章节要达到一线工程水平，必须把认证、授权、输入、Secret、审计和 Agent 工具边界讲成确定性策略。尤其不能把 Prompt 当安全边界。",
     focus: ["认证授权区别", "JWT/Session/OAuth", "SQL 注入/XSS/SSRF/CSRF", "RBAC/ABAC", "Prompt injection 与工具沙箱"],
     questions: [
       {
@@ -365,7 +365,7 @@ export const interviewChapters: Record<number, InterviewChapter> = {
   },
   9: {
     number: 9,
-    verdict: "测试章节的面试强度不是会写几个 happy path，而是能为并发、超时、取消、数据库约束和模型非确定性设计测试。大厂面试会看你是否知道什么该 mock，什么必须真实测。",
+    verdict: "测试章节的工程强度不是会写几个 happy path，而是能为并发、超时、取消、数据库约束和模型非确定性设计测试。高水平评审会看你是否知道什么该 mock，什么必须真实测。",
     focus: ["测试金字塔", "Mock/Fake 边界", "数据库集成测试", "异步取消测试", "故障注入和回放"],
     questions: [
       {
@@ -400,7 +400,7 @@ export const interviewChapters: Record<number, InterviewChapter> = {
   },
   10: {
     number: 10,
-    verdict: "可观测性面试要能把日志、指标、Trace、SLO 和成本联系起来。强候选人不会只说“打日志”，而会说字段、基数、采样、告警阈值和隐私边界。",
+    verdict: "可观测性训练要能把日志、指标、Trace、SLO 和成本联系起来。成熟工程师不会只说“打日志”，而会说字段、基数、采样、告警阈值和隐私边界。",
     focus: ["结构化日志", "Trace 上下文传播", "指标和标签基数", "SLO 和告警", "Agent 成本观测"],
     questions: [
       {
@@ -435,7 +435,7 @@ export const interviewChapters: Record<number, InterviewChapter> = {
   },
   11: {
     number: 11,
-    verdict: "部署章节的大厂强度在于能讲清不可变交付、配置、Secret、CI、migration、回滚和长任务排空。只会写 Dockerfile 不够，必须能说明发布失败如何止损。",
+    verdict: "部署章节的一线强度在于能讲清不可变交付、配置、Secret、CI、migration、回滚和长任务排空。只会写 Dockerfile 不够，必须能说明发布失败如何止损。",
     focus: ["Dockerfile 和镜像层", "运行时配置与 Secret", "CI/CD", "兼容 migration", "滚动发布和优雅关闭"],
     questions: [
       {
@@ -470,7 +470,7 @@ export const interviewChapters: Record<number, InterviewChapter> = {
   },
   12: {
     number: 12,
-    verdict: "系统设计是大厂面试的高分区。本章必须训练你从需求、容量、数据一致性、故障、扩展、成本讲到落地方案。不能只画组件图。",
+    verdict: "系统设计是高水平后端训练的高分区。本章必须训练你从需求、容量、数据一致性、故障、扩展、成本讲到落地方案。不能只画组件图。",
     focus: ["容量估算", "服务边界", "一致性取舍", "限流熔断降级", "队列与 outbox", "容灾 RTO/RPO"],
     questions: [
       {
@@ -479,7 +479,7 @@ export const interviewChapters: Record<number, InterviewChapter> = {
         followUp: "为什么上来画微服务图通常不是好答案？",
       },
       {
-        question: "CAP 应该怎么在面试里讲？",
+        question: "CAP 应该怎么在系统设计里讲？",
         answer: "CAP 讨论网络分区下的一致性和可用性取舍，不是平时随意三选二。应针对具体数据说一致性要求：权限和扣费偏强一致，进度展示可以短暂陈旧。",
         followUp: "用户取消 run 后读到旧状态，哪些数据可以旧，哪些不能旧？",
       },
@@ -505,7 +505,7 @@ export const interviewChapters: Record<number, InterviewChapter> = {
   },
   13: {
     number: 13,
-    verdict: "Agent 后端专项要对齐你的项目方向，但面试仍会按后端标准追问：状态机、工具权限、模型网关、上下文压缩、成本、安全和恢复。强答案必须把概率模型限制在确定性 Runtime 里。",
+    verdict: "Agent 后端专项要对齐你的项目方向，但训练仍会按后端标准追问：状态机、工具权限、模型网关、上下文压缩、成本、安全和恢复。强答案必须把概率模型限制在确定性 Runtime 里。",
     focus: ["Agent loop 状态机", "事件溯源和回放", "上下文预算", "模型网关归一", "工具沙箱", "成本和评测"],
     questions: [
       {
