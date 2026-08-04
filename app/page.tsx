@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { algorithmInterviewTrack, interviewAssessment, interviewChapters, interviewCjkCharacters } from "./interview-track";
+import { algorithmInterviewTrack, interviewAssessment, interviewChapters, interviewCjkCharacters, mockInterviewGauntlet } from "./interview-track";
 import type { InterviewChapter } from "./interview-track";
 import { chapterExpansions } from "./textbook-expansions";
 import { deepChapters, deepVolumeCjkCharacters } from "./textbook-volume";
@@ -529,22 +529,6 @@ function DeepUnitView({ unit, language }: { unit: DeepUnit; language: Language }
         </div>
       </section>
 
-      <section className="interview-drill">
-        <div className="subsection-heading"><span>INTERVIEW</span><h3>大厂面试追问</h3></div>
-        <p className="interview-core">{renderInline(unit.interview.core)}</p>
-        <p>{renderInline(unit.interview.answer)}</p>
-        <div className="interview-grid">
-          <article>
-            <b>继续追问</b>
-            <ol>{unit.interview.followUps.map((item) => <li key={item}>{renderInline(item)}</li>)}</ol>
-          </article>
-          <article>
-            <b>常见扣分点</b>
-            <ul>{unit.interview.traps.map((item) => <li key={item}>{renderInline(item)}</li>)}</ul>
-          </article>
-        </div>
-      </section>
-
       <section className="language-deep-dive">
         <div className="subsection-heading"><span>LANGUAGE NOTE</span><h3>{languageLabel} 中怎么落地</h3></div>
         {unit.languageComparison[language].map((paragraph) => <p key={paragraph}>{renderInline(paragraph)}</p>)}
@@ -591,6 +575,22 @@ function InterviewAssessmentView() {
         <ul>
           {algorithmInterviewTrack.drills.map((drill) => <li key={drill}>{renderInline(drill)}</li>)}
         </ul>
+      </div>
+      <div className="mock-gauntlet">
+        <div>
+          <span>MOCK INTERVIEW</span>
+          <h3>{mockInterviewGauntlet.title}</h3>
+          <p>{mockInterviewGauntlet.note}</p>
+        </div>
+        <div className="mock-rounds">
+          {mockInterviewGauntlet.rounds.map((round) => (
+            <article key={round.name}>
+              <b>{round.name}</b>
+              <p>{round.scenario}</p>
+              <ul>{round.mustCover.map((item) => <li key={item}>{item}</li>)}</ul>
+            </article>
+          ))}
+        </div>
       </div>
     </section>
   );

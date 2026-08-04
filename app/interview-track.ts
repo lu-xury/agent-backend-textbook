@@ -45,6 +45,43 @@ export const algorithmInterviewTrack = {
   ],
 };
 
+export const mockInterviewGauntlet = {
+  title: "六套模拟面试卷",
+  note: "当你把 13 章学完，不要立刻说“我准备好了”。用下面六套卷子自测：每套限时 45 到 60 分钟，要求边讲边写，回答必须能被追问到代码、SQL、指标或状态机。",
+  rounds: [
+    {
+      name: "算法与工程代码轮",
+      scenario: "手写 LRU Cache、令牌桶限流器和一道滑动窗口题。要求先讲不变量，再写代码，最后分析复杂度和并发改造。",
+      mustCover: ["O(1) 数据结构组合", "容量为 0、重复 key、并发访问", "窗口扩张收缩条件", "测试用例覆盖边界"],
+    },
+    {
+      name: "后端八股深挖轮",
+      scenario: "连续回答 TCP/TLS、HTTP 幂等、事务隔离、索引、缓存击穿、线程与协程、JWT 和 SSRF。",
+      mustCover: ["每题先一句话定义", "给出反例和线上故障", "说明监控或验证证据", "不把框架默认行为当答案"],
+    },
+    {
+      name: "数据库与并发轮",
+      scenario: "设计 run/task/tool_call 表，并处理两个 Worker 同时领取任务、模型扣费成功但进程崩溃、事件流按 sequence 恢复。",
+      mustCover: ["UNIQUE、外键和 CHECK", "SELECT FOR UPDATE 或原子 UPDATE", "租约和幂等键", "EXPLAIN 与复合索引"],
+    },
+    {
+      name: "系统设计轮",
+      scenario: "设计支持 10 万并发 Agent Run 的后端平台，要求覆盖 API、队列、Worker、模型网关、SSE、PostgreSQL、Redis 和观测。",
+      mustCover: ["容量估算先行", "控制面和执行面隔离", "状态不放单机内存", "模型故障降级和成本预算"],
+    },
+    {
+      name: "故障排查轮",
+      scenario: "线上出现三连故障：SSE 不流式、Worker 被 OOM kill、重复创建收费 run。你要按证据定位根因并给出短期止血与长期修复。",
+      mustCover: ["代理缓冲与心跳", "cgroup 内存和峰值 RSS", "幂等键与结果未知", "回归测试和告警补齐"],
+    },
+    {
+      name: "项目深挖轮",
+      scenario: "围绕你的 Agent Runtime 项目讲 15 分钟，面试官追问状态机、工具权限、上下文压缩、模型 fallback、成本和安全。",
+      mustCover: ["讲清你负责的边界", "用真实取舍而非口号回答", "能画出 run 事件时间线", "承认限制并给出演进路线"],
+    },
+  ],
+};
+
 export const interviewChapters: Record<number, InterviewChapter> = {
   1: {
     number: 1,
@@ -510,6 +547,9 @@ export const interviewCjkCharacters = [
   algorithmInterviewTrack.title,
   algorithmInterviewTrack.note,
   ...algorithmInterviewTrack.drills,
+  mockInterviewGauntlet.title,
+  mockInterviewGauntlet.note,
+  ...mockInterviewGauntlet.rounds.flatMap((round) => [round.name, round.scenario, ...round.mustCover]),
   ...Object.values(interviewChapters).flatMap((chapter) => [
     chapter.verdict,
     ...chapter.focus,

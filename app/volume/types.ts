@@ -29,12 +29,6 @@ export type DeepUnit = {
   readingTime: string;
   question: string;
   paragraphs: string[];
-  interview: {
-    core: string;
-    answer: string;
-    followUps: string[];
-    traps: string[];
-  };
   mechanismSteps: { title: string; detail: string }[];
   caseStudy: {
     symptom: string;
@@ -100,64 +94,6 @@ function makeUnit(chapter: ChapterProfile, topic: TopicSeed, index: number): Dee
     `落到代码审查上，重点可以压缩成一句话：**${topic.decision}**。只要这句话没有被落实，代码看起来再整洁也还不可靠。`,
     `学完这一节，你至少要能回答：**${topic.decision}**。能回答它，就说明你不是在背术语，而是在理解如何写出可维护的后端代码。`,
   ];
-  const interviewAngles = [
-    {
-      core: `面试官问：后端系统里为什么必须认真处理“${topic.title}”，只说“框架会处理”为什么不够？`,
-      answer: `可以这样答：**${topic.title} 影响的是正确性边界，而不只是代码写法**。${topic.definition}。在生产后端里，请求会遇到并发、超时、取消、重试和进程重启；如果没有把“${topic.decision}”落实到代码，系统就可能在成功路径之外破坏“${chapter.invariant}”。`,
-      followUps: [
-        `如果把这个问题放进“${chapter.project}”，你会先检查哪三个位置？`,
-        `出现超时或重试时，怎样证明副作用没有被执行两次？`,
-        `Python、C++、Rust 在这里各自最容易漏掉什么边界？`,
-      ],
-      traps: [
-        "只背定义，不说明它保护的状态或资源",
-        "只讲框架 API，不讲失败路径和证据",
-        "把单机成功路径当成生产环境契约",
-      ],
-    },
-    {
-      core: `面试官追问：如果线上出现和“${topic.agentExample}”类似的问题，你如何定位？`,
-      answer: `建议按四步回答：第一，明确入口和影响范围；第二，围绕 ${chapter.evidence} 收集事实；第三，沿着“${topic.mechanism}”找第一个破坏不变量的位置；第四，用最小复现或回归测试验证修复。**大厂面试看重的不是你猜中原因，而是你能不能用证据缩小问题**。`,
-      followUps: [
-        "应用日志没有异常时，你还会看哪些系统或基础设施证据？",
-        "如果故障只能偶现，你如何设计对照实验？",
-        "修复后你会补哪类测试，防止同类问题再次出现？",
-      ],
-      traps: [
-        "一上来就加重试、扩容或换库",
-        "把相关现象当根因，没有区分事实和推断",
-        "修复只覆盖当前症状，没有封住同类边界",
-      ],
-    },
-    {
-      core: `面试官让你做设计选择：围绕“${topic.title}”，你会怎样在简单实现和可靠实现之间取舍？`,
-      answer: `好的回答要同时覆盖正确性、复杂度、性能和可观测性。可以先说明简单方案适合单实例、低并发、失败代价低的场景；当进入多实例、长任务、外部副作用或用户计费场景时，就必须提高约束强度。这里的核心原则是：**${topic.decision}**。`,
-      followUps: [
-        "什么时候可以接受内存状态，什么时候必须持久化？",
-        "什么时候同步处理足够，什么时候需要队列或后台任务？",
-        "如果 QPS 提升 10 倍，最先会暴露哪个瓶颈？",
-      ],
-      traps: [
-        "只说“看业务场景”，但不给判断标准",
-        "只追求最复杂架构，不说明成本和适用边界",
-        "忽略观测手段，导致方案上线后无法验证",
-      ],
-    },
-    {
-      core: `面试官问八股定义后继续追问：请举一个反例说明“${topic.misconception}”为什么错。`,
-      answer: `可以使用本节例子回答：${topic.agentExample}。这个反例说明，局部代码看起来能跑，不代表系统契约成立。真正的答案要指出反例中的输入、状态变化、副作用和失败后证据，并说明如何用“${topic.experiment}”复现。`,
-      followUps: [
-        "如果你只能加一个指标，会加在哪里？",
-        "如果只能改一个接口字段，会改什么？",
-        "如果由 AI 生成修复代码，你会重点审查哪三点？",
-      ],
-      traps: [
-        "举例太大，讲成完整系统设计，反而没有照亮概念",
-        "只有现象，没有解释违反了哪个原则",
-        "没有测试或指标，无法证明修复有效",
-      ],
-    },
-  ];
   const studyNotes = [
     [
       `作为基础知识，它的学习顺序应该很朴素：先看最小例子，再看真实系统里的变形，最后再回到八股概念。比如你可以先写一个只有十几行的小程序，让“${topic.title}”的正常情况和异常情况都发生一次。这样再读框架文档时，文档里的名词就不会悬在空中。`,
@@ -218,7 +154,6 @@ function makeUnit(chapter: ChapterProfile, topic: TopicSeed, index: number): Dee
       decisions[index % decisions.length],
       `最后用证据收束学习。和本节相关的证据通常包括：${chapter.evidence}。不要只说“代码应该没问题”，而要能指出哪条日志、哪条测试、哪个状态字段证明它确实满足本章不变量：${chapter.invariant}。`,
     ],
-    interview: interviewAngles[index % interviewAngles.length],
     mechanismSteps: [
       {
         title: "确定入口与责任者",
@@ -298,7 +233,7 @@ export function buildDeepChapter(profile: ChapterProfile): DeepChapter {
     preface: [
       `这一章要解决的问题是：${profile.why}。我们会持续使用“${profile.project}”作为例子，但例子只服务于理解，不会把每个知识点都写成同一种案例分析。`,
       `全章的责任边界是“${profile.boundary}”，必须维护的不变量是“${profile.invariant}”。阅读时请优先抓住这些粗体重点和正文解释，表格、练习和例子只是辅助。`,
-      `从大厂后端面试强度看，本章还不够只会背概念。你需要能回答三类追问：这个知识点保护什么边界，失败时怎么定位，数据量、并发量或故障率上来后方案如何变化。`,
+      `学完正文后，再进入本章的面试强化区，把基础概念转换成高频问答、手写题和系统设计取舍。这样学习顺序会更自然：先懂，再练，再接受追问。`,
       `建议每次学习两到三个小节：先通读正文，再挑一个练习亲手验证。Python、C++、Rust 可以任选其一作为主线，另一种语言用来对照理解资源、错误和并发的差异。`,
     ],
     units: profile.topics.map((topic, index) => makeUnit(profile, topic, index)),
@@ -314,10 +249,6 @@ export function countDeepChapterCharacters(chapter: DeepChapter): number {
       unit.caseStudy.symptom,
       unit.caseStudy.analysis[0] ?? "",
       unit.caseStudy.correction[0] ?? "",
-      unit.interview.core,
-      unit.interview.answer,
-      ...unit.interview.followUps,
-      ...unit.interview.traps,
       ...unit.languageComparison.python,
       unit.lab.goal,
       ...unit.lab.steps,
