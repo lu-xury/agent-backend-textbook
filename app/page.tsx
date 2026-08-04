@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { chapterExpansions } from "./textbook-expansions";
 
 type Language = "python" | "cpp" | "rust";
 type Level = "P0" | "P1";
@@ -487,25 +488,32 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
   const [menuOpen, setMenuOpen] = useState(false);
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("agent-backend-textbook-progress");
-    const savedLang = window.localStorage.getItem("agent-backend-textbook-language") as Language | null;
-    if (saved) {
-      try { setCompleted(JSON.parse(saved)); } catch { /* ignore malformed local preference */ }
-    }
-    if (savedLang && languages.some((item) => item.id === savedLang)) setLanguage(savedLang);
-    const hash = Number(window.location.hash.replace("#chapter-", ""));
-    if (hash >= 1 && hash <= chapters.length) setActiveNumber(hash);
+    const timer = window.setTimeout(() => {
+      const saved = window.localStorage.getItem("agent-backend-textbook-progress");
+      const savedLang = window.localStorage.getItem("agent-backend-textbook-language") as Language | null;
+      if (saved) {
+        try { setCompleted(JSON.parse(saved)); } catch { /* ignore malformed local preference */ }
+      }
+      if (savedLang && languages.some((item) => item.id === savedLang)) setLanguage(savedLang);
+      const hash = Number(window.location.hash.replace("#chapter-", ""));
+      if (hash >= 1 && hash <= chapters.length) setActiveNumber(hash);
+      setPreferencesLoaded(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
+    if (!preferencesLoaded) return;
     window.localStorage.setItem("agent-backend-textbook-progress", JSON.stringify(completed));
-  }, [completed]);
+  }, [completed, preferencesLoaded]);
 
   useEffect(() => {
+    if (!preferencesLoaded) return;
     window.localStorage.setItem("agent-backend-textbook-language", language);
-  }, [language]);
+  }, [language, preferencesLoaded]);
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -516,6 +524,7 @@ export default function Home() {
   }, [query]);
 
   const active = chapters[activeNumber - 1];
+  const expansion = chapterExpansions[activeNumber];
   const totalChecks = chapters.reduce((sum, chapter) => sum + chapter.done.length, 0);
   const finishedChecks = Object.values(completed).filter(Boolean).length;
   const progress = Math.round((finishedChecks / totalChecks) * 100);
@@ -613,6 +622,43 @@ export default function Home() {
           <span className="track-hint">切换页顶语言以查看本章对应的学习重点</span>
         </section>
 
+        <section className="chapter-opening">
+          <span className="section-kicker">CHAPTER QUESTION</span>
+          <h2>{expansion.opening.question}</h2>
+          <div className="opening-copy">
+            {expansion.opening.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+          </div>
+        </section>
+
+        <section className="mental-model">
+          <div className="model-intro">
+            <span className="section-kicker">MENTAL MODEL</span>
+            <h2>{expansion.mentalModel.title}</h2>
+            <p>先建立这张思维地图，再进入具体概念。遇到新框架或新语言时，仍然使用同一组问题分析。</p>
+          </div>
+          <ol className="model-steps">
+            {expansion.mentalModel.steps.map((step, index) => (
+              <li key={step.title}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <div><b>{step.title}</b><p>{step.detail}</p></div>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="comparison-section">
+          <span className="section-kicker">DECISION TABLE</span>
+          <h2>{expansion.comparison.title}</h2>
+          <div className="table-scroll">
+            <table>
+              <thead><tr>{expansion.comparison.columns.map((column) => <th key={column}>{column}</th>)}</tr></thead>
+              <tbody>
+                {expansion.comparison.rows.map((row) => <tr key={row[0]}>{row.map((cell) => <td key={cell}>{cell}</td>)}</tr>)}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         <div className="reading-layout">
           <div className="lesson-list">
             {active.lessons.map((lesson) => (
@@ -639,6 +685,49 @@ export default function Home() {
             {active.lessons.map((lesson) => <a key={lesson.id} href={`#${lesson.id}`}><i className={lesson.level.toLowerCase()} />{lesson.title.replace(/^\d+\.\d+\s*/, "")}</a>)}
           </aside>
         </div>
+
+        <section className="case-study-section">
+          <div className="case-heading">
+            <span className="case-number">CASE {String(active.number).padStart(2, "0")}</span>
+            <div><span className="section-kicker">REAL FAILURE ANALYSIS</span><h2>{expansion.caseStudy.title}</h2></div>
+          </div>
+          <p className="case-situation">{expansion.caseStudy.situation}</p>
+          <div className="case-grid">
+            <article><h3>观察到的证据</h3><ul>{expansion.caseStudy.evidence.map((item) => <li key={item}>{item}</li>)}</ul></article>
+            <article><h3>逐步推理</h3><ol>{expansion.caseStudy.reasoning.map((item) => <li key={item}>{item}</li>)}</ol></article>
+            <article><h3>工程修复</h3><ul>{expansion.caseStudy.solution.map((item) => <li key={item}>{item}</li>)}</ul></article>
+          </div>
+          <blockquote><b>案例结论</b><p>{expansion.caseStudy.conclusion}</p></blockquote>
+        </section>
+
+        <section className="guided-lab-section">
+          <div className="lab-copy">
+            <span className="section-kicker">GUIDED LAB</span>
+            <h2>{expansion.lab.title}</h2>
+            <p>{expansion.lab.brief}</p>
+            <div className="deliverable"><b>最终交付物</b><span>{expansion.lab.deliverable}</span></div>
+          </div>
+          <div className="lab-work">
+            <h3>操作步骤</h3>
+            <ol>{expansion.lab.steps.map((step) => <li key={step}>{step}</li>)}</ol>
+            <h3>验收检查</h3>
+            <ul className="lab-checks">{expansion.lab.checks.map((check) => <li key={check}>✓ {check}</li>)}</ul>
+          </div>
+        </section>
+
+        <section className="review-section">
+          <div className="section-label">REVIEW & ANSWERS</div>
+          <h2>理解检查与参考答案</h2>
+          <p>先尝试自己回答，再展开答案。能够用自己的话说明因果关系，才算真正掌握。</p>
+          <div className="review-list">
+            {expansion.review.map((item, index) => (
+              <details key={item.question}>
+                <summary><span>Q{index + 1}</span>{item.question}</summary>
+                <p>{item.answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
 
         <section className="practice-section">
           <div className="section-label">PRACTICE</div>
