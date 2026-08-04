@@ -527,6 +527,22 @@ function DeepUnitView({ unit, language }: { unit: DeepUnit; language: Language }
         </div>
       </section>
 
+      <section className="interview-drill">
+        <div className="subsection-heading"><span>INTERVIEW</span><h3>大厂面试追问</h3></div>
+        <p className="interview-core">{renderInline(unit.interview.core)}</p>
+        <p>{renderInline(unit.interview.answer)}</p>
+        <div className="interview-grid">
+          <article>
+            <b>继续追问</b>
+            <ol>{unit.interview.followUps.map((item) => <li key={item}>{renderInline(item)}</li>)}</ol>
+          </article>
+          <article>
+            <b>常见扣分点</b>
+            <ul>{unit.interview.traps.map((item) => <li key={item}>{renderInline(item)}</li>)}</ul>
+          </article>
+        </div>
+      </section>
+
       <section className="language-deep-dive">
         <div className="subsection-heading"><span>LANGUAGE NOTE</span><h3>{languageLabel} 中怎么落地</h3></div>
         {unit.languageComparison[language].map((paragraph) => <p key={paragraph}>{renderInline(paragraph)}</p>)}
