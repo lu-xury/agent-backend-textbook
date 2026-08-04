@@ -25,22 +25,27 @@ test("builds the GitHub Pages textbook bundle", async () => {
   assert.match(bundle, /值、引用与所有权/);
   assert.match(bundle, /举个例子/);
   assert.match(bundle, /小练习/);
-  assert.match(bundle, /大厂面试追问/);
-  assert.match(bundle, /常见扣分点/);
-  assert.match(bundle, /复杂度、性能和可观测性/);
+  assert.match(bundle, /老师判断/);
+  assert.match(bundle, /大厂面试强化/);
+  assert.match(bundle, /算法与代码题补强/);
+  assert.match(bundle, /手写 LRU Cache/);
+  assert.match(bundle, /事务隔离级别/);
+  assert.match(bundle, /10 万并发 Agent Run/);
+  assert.match(bundle, /常见失分点/);
   assert.match(styles, /\.unit-example/);
-  assert.match(styles, /\.interview-drill/);
+  assert.match(styles, /\.interview-section/);
+  assert.match(styles, /\.interview-assessment/);
   assert.match(styles, /font-size:18px/);
   assert.doesNotMatch(bundle, /机制推演/);
   assert.doesNotMatch(bundle, /逐步推理/);
 
   const cjkCharacters = bundle.match(/[\u3400-\u9fff]/g) ?? [];
   assert.ok(
-    cjkCharacters.length >= 45_000,
-    `bundle should still contain textbook seeds and prose templates; got ${cjkCharacters.length} CJK characters`,
+    cjkCharacters.length >= 55_000,
+    `bundle should contain textbook prose plus interview training; got ${cjkCharacters.length} CJK characters`,
   );
   assert.ok(
-    cjkCharacters.length <= 115_000,
-    `bundle should be shorter than the previous template-heavy edition; got ${cjkCharacters.length} CJK characters`,
+    cjkCharacters.length <= 125_000,
+    `bundle should stay shorter than the previous template-heavy edition while adding interview training; got ${cjkCharacters.length} CJK characters`,
   );
 });
