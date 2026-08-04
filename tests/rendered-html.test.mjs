@@ -25,8 +25,9 @@ test("builds the GitHub Pages textbook bundle", async () => {
   assert.match(bundle, /值、引用与所有权/);
   assert.match(bundle, /举个例子/);
   assert.match(bundle, /小练习/);
-  assert.match(bundle, /老师判断/);
-  assert.match(bundle, /工程能力强化/);
+  assert.match(bundle, /全书能力校准/);
+  assert.match(bundle, /章末能力训练/);
+  assert.match(bundle, /参考要点/);
   assert.match(bundle, /算法与代码题补强/);
   assert.match(bundle, /手写 LRU Cache/);
   assert.match(bundle, /事务隔离级别/);
@@ -41,6 +42,7 @@ test("builds the GitHub Pages textbook bundle", async () => {
   assert.match(styles, /font-size:18px/);
   assert.doesNotMatch(bundle, /机制推演/);
   assert.doesNotMatch(bundle, /逐步推理/);
+  assert.doesNotMatch(bundle, /是否达到一线后端工程强度/);
   assert.doesNotMatch(bundle, /面试/);
   assert.doesNotMatch(bundle, /大厂/);
   assert.doesNotMatch(bundle, /八股/);

@@ -553,8 +553,8 @@ function InterviewAssessmentView() {
   return (
     <section className="interview-assessment">
       <div className="assessment-copy">
-        <span className="section-kicker">TEACHER STANDARD</span>
-        <h2>是否达到一线后端工程强度？</h2>
+        <span className="section-kicker">FINAL CALIBRATION</span>
+        <h2>全书能力校准</h2>
         <p>{renderInline(`**${interviewAssessment.verdict}**`)}</p>
         <p>{interviewAssessment.upgradedTo}</p>
       </div>
@@ -578,17 +578,22 @@ function InterviewAssessmentView() {
       </div>
       <div className="mock-gauntlet">
         <div>
-          <span>PRACTICE GAUNTLET</span>
+          <span>FINAL PRACTICE</span>
           <h3>{mockInterviewGauntlet.title}</h3>
           <p>{mockInterviewGauntlet.note}</p>
         </div>
         <div className="mock-rounds">
           {mockInterviewGauntlet.rounds.map((round) => (
-            <article key={round.name}>
-              <b>{round.name}</b>
-              <p>{round.scenario}</p>
-              <ul>{round.mustCover.map((item) => <li key={item}>{item}</li>)}</ul>
-            </article>
+            <details key={round.name}>
+              <summary>
+                <b>{round.name}</b>
+                <span>{round.scenario}</span>
+              </summary>
+              <div>
+                <b>参考要点</b>
+                <ul>{round.mustCover.map((item) => <li key={item}>{item}</li>)}</ul>
+              </div>
+            </details>
           ))}
         </div>
       </div>
@@ -600,8 +605,8 @@ function InterviewChapterView({ chapter }: { chapter: InterviewChapter }) {
   return (
     <section className="interview-section">
       <div className="interview-heading">
-        <span className="section-kicker">ENGINEERING BOOST</span>
-        <h2>工程能力强化</h2>
+        <span className="section-kicker">CHAPTER DRILLS</span>
+        <h2>章末能力训练</h2>
         <p>{chapter.verdict}</p>
       </div>
 
@@ -611,7 +616,7 @@ function InterviewChapterView({ chapter }: { chapter: InterviewChapter }) {
 
       <div className="interview-qa">
         {chapter.questions.map((item, index) => (
-          <details key={item.question} open={index === 0}>
+          <details key={item.question}>
             <summary><span>核心题 {index + 1}</span>{item.question}</summary>
             <div>
               <p>{renderInline(item.answer)}</p>
@@ -623,12 +628,17 @@ function InterviewChapterView({ chapter }: { chapter: InterviewChapter }) {
 
       <div className="interview-drill-grid">
         {chapter.drills.map((drill) => (
-          <article key={drill.title}>
-            <span>训练题</span>
-            <h3>{drill.title}</h3>
-            <p>{drill.prompt}</p>
-            <ul>{drill.strongSignals.map((signal) => <li key={signal}>{renderInline(signal)}</li>)}</ul>
-          </article>
+          <details key={drill.title}>
+            <summary>
+              <span>训练题</span>
+              <h3>{drill.title}</h3>
+              <p>{drill.prompt}</p>
+            </summary>
+            <div>
+              <b>参考要点</b>
+              <ul>{drill.strongSignals.map((signal) => <li key={signal}>{renderInline(signal)}</li>)}</ul>
+            </div>
+          </details>
         ))}
       </div>
 
@@ -782,8 +792,6 @@ export default function Home() {
           <span className="track-hint">切换页顶语言以查看本章对应的学习重点</span>
         </section>
 
-        <InterviewAssessmentView />
-
         <section className="chapter-opening">
           <span className="section-kicker">CHAPTER QUESTION</span>
           <h2>{expansion.opening.question}</h2>
@@ -820,8 +828,6 @@ export default function Home() {
             </table>
           </div>
         </section>
-
-        <InterviewChapterView chapter={activeInterview} />
 
         <section className="volume-note">
           <div>
@@ -924,6 +930,8 @@ export default function Home() {
           </div>
         </section>
 
+        <InterviewChapterView chapter={activeInterview} />
+
         <section className="practice-section">
           <div className="section-label">PRACTICE</div>
           <h2>本章实践任务</h2>
@@ -951,6 +959,8 @@ export default function Home() {
             })}
           </div>
         </section>
+
+        {active.number === chapters.length && <InterviewAssessmentView />}
 
         <nav className="pager" aria-label="章节翻页">
           {active.number > 1 ? <button onClick={() => selectChapter(active.number - 1)}><span>← 上一章</span><b>{chapters[active.number - 2].title}</b></button> : <div />}
