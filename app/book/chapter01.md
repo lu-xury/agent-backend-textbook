@@ -108,15 +108,24 @@ profile 和 same_profile 是两个名字，却引用同一个字典对象；第�
 
 下面的伪代码描述“把一件商品加入购物车”。它不依赖某个 Web 框架，却包含本章的大多数概念：
 
-    addItem(userId, sku, quantity):
-        要求：quantity 是 1 到 99 的整数；userId 已通过认证
-        product = catalog.findPublicProduct(sku)
-        若 product 不存在：返回 PRODUCT_NOT_FOUND
-        若 product.stock < quantity：返回 INSUFFICIENT_STOCK
-        cart = cartRepository.getOrCreate(userId)
-        cart.add(sku, quantity)
-        cartRepository.save(cart)
-        返回 cart 的公开快照
+```text
+addItem(userId, sku, quantity):
+    要求：quantity 是 1 到 99 的整数；userId 已通过认证
+    product = catalog.findPublicProduct(sku)
+    若 product 不存在：返回 PRODUCT_NOT_FOUND
+    若 product.stock < quantity：返回 INSUFFICIENT_STOCK
+    cart = cartRepository.getOrCreate(userId)
+    cart.add(sku, quantity)
+    cartRepository.save(cart)
+    返回 cart 的公开快照
+```
+
+| 在这段代码中 | 它解决的问题 | 不应误解为 |
+| --- | --- | --- |
+| 类型与校验 | 在入口拒绝不合法数量 | 类型能自动保证库存正确 |
+| `catalog` / `cartRepository` 接口 | 隔离数据取得与保存方式 | 必须为每个类都创建接口 |
+| 业务错误码 | 让调用方能据此分支处理 | 向客户端暴露内部异常 |
+| `cart.add` | 修改购物车这一份业务状态 | 已经完成最终库存扣减 |
 
 userId、sku、quantity 是值或值对象；cart 是可变领域对象；catalog 和 cartRepository 是接口；findPublicProduct 不直接返回数据库行，是为了守住公开字段的边界。库存不足属于可预期业务拒绝，不应被包装成“服务器内部错误”。这里的 product.stock 只用于提示“当前看起来可添加”，不是最终库存预留；真正创建订单时，库存服务或数据库事务必须用条件更新等方式保证“检查与扣减”在并发下仍一致。如果以后发现同一购物车有十万条商品，才需要讨论 cart.add 在数组里查重是线性还是通过映射常数时间定位。概念并非独立背诵，而是在这种小流程中共同约束程序行为。
 
