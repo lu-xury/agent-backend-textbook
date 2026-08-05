@@ -5,10 +5,16 @@ import { chapters } from "./book";
 import type { Chapter } from "./book/types";
 
 function InlineText({ text }: { text: string }) {
-  const pieces = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+  const pieces = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\((?:https?:\/\/|mailto:)[^)]+\)|https?:\/\/[^\s<>"]+)/g);
   return <>{pieces.map((piece, index) => {
     if (piece.startsWith("**") && piece.endsWith("**")) return <strong key={index}>{piece.slice(2, -2)}</strong>;
     if (piece.startsWith("`") && piece.endsWith("`")) return <code key={index}>{piece.slice(1, -1)}</code>;
+    const markdownLink = piece.match(/^\[([^\]]+)\]\(([^\s)]+)\)$/);
+    if (markdownLink) return <a key={index} href={markdownLink[2]} target="_blank" rel="noreferrer">{markdownLink[1]}</a>;
+    if (piece.startsWith("http://") || piece.startsWith("https://")) {
+      const [, href, trailing = ""] = piece.match(/^(.*?)([。，、；：！？,.!?:;）]*)$/) ?? [, piece, ""];
+      return <span key={index}><a href={href} target="_blank" rel="noreferrer">{href}</a>{trailing}</span>;
+    }
     return <span key={index}>{piece}</span>;
   })}</>;
 }
@@ -16,7 +22,7 @@ function InlineText({ text }: { text: string }) {
 const slug = (value: string) => value.toLowerCase().replace(/[^\w\u4e00-\u9fff]+/g, "-").replace(/^-|-$/g, "");
 const visualTables: Record<number, { title: string; columns: string[]; rows: string[][] }> = {
   2: { title: "并发单元的边界", columns: ["概念", "共享什么", "适合什么"], rows: [["进程", "默认不共享地址空间", "故障隔离、独立服务"], ["线程", "进程内内存与文件描述符", "并行 CPU 工作或阻塞 API"], ["协程", "由运行时协作调度", "大量 I/O 等待"]] },
-  3: { title: "网络栈中各层的职责", columns: ["层", "提供的能力", "不能保证什么"], rows: [["TCP", "有序、可靠的字节流", "应用消息边界"], ["TLS", "保密、完整性、对端认证", "业务身份与授权"], ["HTTP", "请求—响应语义", "请求一定只执行一次"]] },
+  3: { title: "网络栈中各层的职责", columns: ["层", "提供的能力", "不能保证什么"], rows: [["IP", "按路由表把数据报送往下一跳", "必达、顺序与只送一次"], ["TCP", "有序、可靠的字节流", "应用消息边界"], ["TLS", "保密、完整性、对端认证", "业务身份与授权"], ["HTTP", "请求—响应语义", "请求一定只执行一次"]] },
   4: { title: "一次 API 输入的三种表示", columns: ["表示", "边界", "主要职责"], rows: [["DTO", "HTTP 入口/出口", "解析和校验外部数据"], ["领域模型", "业务规则内部", "表达业务状态和约束"], ["ORM 实体", "持久化层", "映射数据库记录"]] },
   5: { title: "数据库机制各自解决的问题", columns: ["机制", "主要收益", "代价或边界"], rows: [["索引", "减少定位和排序成本", "占空间，拖慢写入"], ["事务", "一组变化的原子提交", "不自动协调外部系统"], ["连接池", "复用连接并限制并发", "池过大也会压垮数据库"]] },
   6: { title: "缓存问题与对应策略", columns: ["现象", "直接原因", "优先处理"], rows: [["穿透", "反复查询不存在的数据", "缓存空值或过滤非法键"], ["击穿", "热点键同刻失效", "预热、互斥或逻辑过期"], ["雪崩", "大量键同时失效", "错开 TTL、限流和降级"]] },
@@ -29,26 +35,98 @@ const visualTables: Record<number, { title: string; columns: string[]; rows: str
   13: { title: "Agent Runtime 的职责分界", columns: ["部分", "可以做什么", "不能替代什么"], rows: [["LLM", "提出计划和工具参数", "权限判断与副作用控制"], ["Runtime", "验证、编排、取消与记账", "凭空判断业务事实"], ["工具服务", "执行被授权的动作", "信任模型输出"]] },
 };
 
+const isTableDivider = (line: string) => /^\|?\s*:?-{3,}/.test(line);
+const isBlockStart = (line: string) => /^```|^ {4}|^## |^### |^> |^- |^\d+\. |^\|/.test(line);
+const hasLink = (text: string) => /\[[^\]]+\]\((?:https?:\/\/|mailto:)[^)]+\)|https?:\/\//.test(text);
+
+function CodeBlock({ code, language, index }: { code: string; language?: string; index: number }) {
+  const label = language && language !== "text" ? language : "代码";
+  return <div className="code-block" key={index}>
+    <div className="code-block-header"><span>{label}</span></div>
+    <pre><code>{code}</code></pre>
+  </div>;
+}
+
 function MarkdownBody({ markdown }: { markdown: string }) {
-  const blocks = markdown.trim().split(/\n\s*\n/);
-  return <div className="book-prose">{blocks.map((block, index) => {
-    const text = block.trim();
-    const fencedCode = text.match(/^```[^\n]*\n([\s\S]*?)\n```$/);
-    if (fencedCode) return <pre key={index}><code>{fencedCode[1]}</code></pre>;
-    if (text.startsWith("## ")) { const heading = text.slice(3); return <h2 id={slug(heading)} key={index}>{heading}</h2>; }
-    if (text.startsWith("### ")) { const heading = text.slice(4); return <h3 key={index}>{heading}</h3>; }
-    if (text.startsWith("> ")) return <aside className="callout" key={index}><p><InlineText text={text.slice(2)} /></p></aside>;
-    if (text.startsWith("    ")) return <pre key={index}><code>{text.replace(/^    /gm, "")}</code></pre>;
-    const lines = text.split("\n");
-    if (lines.length >= 2 && /^\|.+\|$/.test(lines[0]) && /^\|?\s*:?-{3,}/.test(lines[1])) {
-      const cells = (line: string) => line.trim().replace(/^\||\|$/g, "").split("|").map((cell) => cell.trim());
-      const [head, , ...rows] = lines.map(cells);
-      return <div className="table-wrap" key={index}><table><thead><tr>{head.map((cell, i) => <th key={i}><InlineText text={cell} /></th>)}</tr></thead><tbody>{rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, cellIndex) => <td key={cellIndex}><InlineText text={cell} /></td>)}</tr>)}</tbody></table></div>;
+  const lines = markdown.replace(/\r\n/g, "\n").trim().split("\n");
+  const nodes = [];
+  let index = 0;
+  let key = 0;
+
+  const nextKey = () => key++;
+  const skipBlankLines = () => { while (index < lines.length && !lines[index].trim()) index += 1; };
+  const cells = (line: string) => line.trim().replace(/^\||\|$/g, "").split("|").map((cell) => cell.trim());
+
+  while (index < lines.length) {
+    skipBlankLines();
+    if (index >= lines.length) break;
+    const line = lines[index];
+
+    if (line.startsWith("```")) {
+      const language = line.slice(3).trim();
+      index += 1;
+      const code: string[] = [];
+      while (index < lines.length && !lines[index].startsWith("```")) code.push(lines[index++]);
+      if (index < lines.length) index += 1;
+      nodes.push(<CodeBlock key={nextKey()} index={key} code={code.join("\n")} language={language} />);
+      continue;
     }
-    if (lines.every((line) => line.startsWith("- "))) return <ul key={index}>{lines.map((line) => <li key={line}><InlineText text={line.slice(2)} /></li>)}</ul>;
-    if (lines.every((line) => /^\d+\. /.test(line))) return <ol key={index}>{lines.map((line) => <li key={line}><InlineText text={line.replace(/^\d+\. /, "")} /></li>)}</ol>;
-    return <p key={index}><InlineText text={text.replace(/\n/g, " ")} /></p>;
-  })}</div>;
+
+    if (line.startsWith("    ")) {
+      const code: string[] = [];
+      while (index < lines.length && (lines[index].startsWith("    ") || !lines[index].trim())) {
+        code.push(lines[index].startsWith("    ") ? lines[index].slice(4) : "");
+        index += 1;
+      }
+      while (code.length && !code.at(-1)) code.pop();
+      nodes.push(<CodeBlock key={nextKey()} index={key} code={code.join("\n")} language="text" />);
+      continue;
+    }
+
+    if (line.startsWith("## ")) {
+      const heading = line.slice(3);
+      nodes.push(<h2 id={slug(heading)} key={nextKey()}>{heading}</h2>);
+      index += 1;
+      continue;
+    }
+    if (line.startsWith("### ")) {
+      nodes.push(<h3 key={nextKey()}>{line.slice(4)}</h3>);
+      index += 1;
+      continue;
+    }
+    if (line.startsWith("> ")) {
+      const quote: string[] = [];
+      while (index < lines.length && lines[index].startsWith("> ")) quote.push(lines[index++].slice(2));
+      nodes.push(<aside className="callout" key={nextKey()}><p><InlineText text={quote.join(" ")} /></p></aside>);
+      continue;
+    }
+    if (line.startsWith("|") && isTableDivider(lines[index + 1] ?? "")) {
+      const head = cells(line);
+      index += 2;
+      const rows: string[][] = [];
+      while (index < lines.length && lines[index].startsWith("|")) rows.push(cells(lines[index++]));
+      nodes.push(<div className="table-wrap" key={nextKey()}><table><thead><tr>{head.map((cell, cellIndex) => <th key={cellIndex}><InlineText text={cell} /></th>)}</tr></thead><tbody>{rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, cellIndex) => <td key={cellIndex}><InlineText text={cell} /></td>)}</tr>)}</tbody></table></div>);
+      continue;
+    }
+    if (line.startsWith("- ")) {
+      const items: string[] = [];
+      while (index < lines.length && lines[index].startsWith("- ")) items.push(lines[index++].slice(2));
+      nodes.push(<ul key={nextKey()}>{items.map((item, itemIndex) => <li key={itemIndex}><InlineText text={item} /></li>)}</ul>);
+      continue;
+    }
+    if (/^\d+\. /.test(line)) {
+      const items: string[] = [];
+      while (index < lines.length && /^\d+\. /.test(lines[index])) items.push(lines[index++].replace(/^\d+\. /, ""));
+      nodes.push(<ol key={nextKey()}>{items.map((item, itemIndex) => <li key={itemIndex}><InlineText text={item} /></li>)}</ol>);
+      continue;
+    }
+
+    const paragraph: string[] = [];
+    while (index < lines.length && lines[index].trim() && !isBlockStart(lines[index])) paragraph.push(lines[index++]);
+    const text = paragraph.join(" ");
+    nodes.push(<p className={hasLink(text) ? "has-link" : undefined} key={nextKey()}><InlineText text={text} /></p>);
+  }
+  return <div className="book-prose">{nodes}</div>;
 }
 
 function ReadingProgress({ chapter }: { chapter: Chapter }) {
