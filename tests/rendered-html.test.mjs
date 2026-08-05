@@ -19,45 +19,29 @@ test("builds the GitHub Pages textbook bundle", async () => {
   const bundle = await readFile(join(distRoot.pathname, scriptPath), "utf8");
   const styles = await readFile(join(distRoot.pathname, stylePath), "utf8");
 
-  assert.match(bundle, /本章正文/);
-  assert.match(bundle, /值、类型、内存与可变性/);
-  assert.match(bundle, /进程、线程与调度/);
-  assert.match(bundle, /链路层/);
-  assert.match(bundle, /TCP、TLS 与连接生命周期/);
-  assert.match(bundle, /事务、MVCC、锁与隔离/);
-  assert.match(bundle, /工作机制/);
-  assert.match(bundle, /举个例子/);
-  assert.match(bundle, /小练习/);
-  assert.match(bundle, /全书能力校准/);
-  assert.match(bundle, /章末能力训练/);
-  assert.match(bundle, /参考要点/);
-  assert.match(bundle, /算法与代码题补强/);
-  assert.match(bundle, /手写 LRU Cache/);
-  assert.match(bundle, /事务隔离级别/);
-  assert.match(bundle, /10 万并发 Agent Run/);
-  assert.match(bundle, /六套综合实战卷/);
-  assert.match(bundle, /故障排查卷/);
-  assert.match(bundle, /常见薄弱点/);
-  assert.match(styles, /\.unit-example/);
-  assert.match(styles, /\.interview-section/);
-  assert.match(styles, /\.interview-assessment/);
-  assert.match(styles, /\.mock-rounds/);
-  assert.match(styles, /font-size:18px/);
+  assert.match(bundle, /后端程序、数据、接口与复杂度/);
+  assert.match(bundle, /操作系统、进程、线程、协程与 Linux 资源/);
+  assert.match(bundle, /网络、TCP、TLS 与 HTTP/);
+  assert.match(bundle, /关系数据库、SQL、索引、事务与并发控制/);
+  assert.match(bundle, /分布式系统与架构设计/);
+  assert.match(bundle, /Agent 后端：把不确定性关在边界内/);
+  assert.match(bundle, /认证与授权/);
+  assert.match(bundle, /原子性与幂等性/);
+  assert.match(bundle, /日志、指标和 Trace/);
+  assert.match(bundle, /Tool schema 是契约，不是授权书/);
+  assert.match(styles, /\.book-prose/);
+  assert.match(styles, /\.chapter-toc/);
+  assert.match(styles, /font-size:17px/);
   assert.doesNotMatch(bundle, /机制推演/);
   assert.doesNotMatch(bundle, /逐步推理/);
-  assert.doesNotMatch(bundle, /是否达到一线后端工程强度/);
-  assert.doesNotMatch(bundle, /面试/);
-  assert.doesNotMatch(bundle, /大厂/);
-  assert.doesNotMatch(bundle, /八股/);
-  assert.doesNotMatch(bundle, /面试官/);
 
   const cjkCharacters = bundle.match(/[\u3400-\u9fff]/g) ?? [];
   assert.ok(
-    cjkCharacters.length >= 55_000,
-    `bundle should contain textbook prose plus applied training; got ${cjkCharacters.length} CJK characters`,
+    cjkCharacters.length >= 100_000,
+    `bundle should contain textbook prose and chapter distinctions; got ${cjkCharacters.length} CJK characters`,
   );
   assert.ok(
-    cjkCharacters.length <= 125_000,
-    `bundle should stay shorter than the previous template-heavy edition while adding applied training; got ${cjkCharacters.length} CJK characters`,
+    cjkCharacters.length <= 130_000,
+    `bundle should stay shorter than the previous template-heavy edition; got ${cjkCharacters.length} CJK characters`,
   );
 });

@@ -1,14 +1,29 @@
-# Agent 后端开发教科书
+# 后端开发基础与实践
 
-面向大模型 Agent 开发者的交互式中文教材。目标不是把读者训练成某一种语言的框架使用者，而是建立能审查、调试和维护 AI 生成后端代码的基础能力。
+面向后端初学者的中文网页教材。全书从程序、操作系统、网络、HTTP、数据库、缓存、异步任务、安全、测试、可观测性、部署和分布式系统出发，最后把这些基础收束到可靠的 Agent 后端。
 
-## 内容
+## 编写原则
 
-- 13 章后端与 Agent Runtime 知识
-- P0 / P1 学习优先级
-- Python、C++、Rust 三条实践主线
-- 章节搜索、学习进度与完成标准
-- 桌面端与移动端响应式布局
+- 每个概念先说明**是什么、为什么存在、什么时候使用、边界在哪里**。
+- 例子只服务于解释；不以固定的“案例/机制/实验”模板填充章节。
+- 每章包含紧贴正文的高频易混概念辨析、练习与参考答案。
+- 事实性内容优先链接 RFC、语言/系统官方文档、PostgreSQL、OWASP、Kubernetes、OpenTelemetry 和 Google SRE 等资料。
+
+## 目录
+
+1. 后端程序、数据、接口与复杂度
+2. 操作系统、进程、线程、协程与 Linux 资源
+3. 网络、TCP、TLS 与 HTTP
+4. Web API、框架与服务边界
+5. 关系数据库、SQL、索引、事务与并发控制
+6. 缓存、Redis、限流与流量保护
+7. 任务、消息队列与异步系统
+8. 应用安全、身份、权限与数据保护
+9. 测试、调试与代码质量
+10. 可观测性、SLO 与故障处理
+11. Linux、容器、配置与部署
+12. 分布式系统与架构设计
+13. Agent 后端：把不确定性关在边界内
 
 ## 本地运行
 
@@ -17,14 +32,6 @@ npm ci
 npm run dev
 ```
 
-## 构建 GitHub Pages
+运行 `npm run build` 生成 GitHub Pages 静态产物；主分支更新后，仓库的 GitHub Actions 会自动部署。
 
-```bash
-npm run build
-```
-
-静态产物生成在 `dist/`。推送到 `main` 后，仓库中的 GitHub Actions 工作流会自动构建并部署教材。
-
-## 在线地址
-
-<https://lu-xury.github.io/agent-backend-textbook/>
+在线阅读：<https://lu-xury.github.io/agent-backend-textbook/>
