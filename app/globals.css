@@ -75,6 +75,11 @@ strong { color: #006e65; font-weight: 800; }
 .book-prose code { padding: 1px 5px; color: #8a4329; background: #f6ebe4; font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
 .book-prose pre { overflow-x: auto; margin: 28px 0; padding: 22px 24px; color: #e6f4ef; background: #17363a; box-shadow: 0 12px 30px rgba(22,52,55,.12); }
 .book-prose pre code { padding: 0; color: inherit; background: transparent; font-size: 14px; line-height: 1.8; }
+.table-wrap { overflow-x: auto; margin: 26px 0; border: 1px solid #d7e3dd; background: #fbfdfb; }
+.book-prose table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: .94rem; line-height: 1.65; }
+.book-prose th, .book-prose td { padding: 12px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid #dfe8e3; }
+.book-prose th { color: #17493e; background: #edf5f0; font-weight: 700; }
+.book-prose tr:last-child td { border-bottom: 0; }
 .lesson { scroll-margin-top: 28px; margin: 0 0 70px; }
 .lesson-heading { display: flex; gap: 15px; align-items: baseline; margin-bottom: 15px; }
 .lesson-heading > span { color: #9eb0a9; font-family: Georgia, serif; font-size: 15px; }
