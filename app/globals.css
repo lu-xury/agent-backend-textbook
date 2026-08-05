@@ -16,7 +16,7 @@ html { scroll-behavior: smooth; }
 body { margin: 0; color: var(--ink); background: var(--paper); font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; font-size: 17px; }
 button, input { font: inherit; }
 button { color: inherit; }
-a { color: inherit; }
+a { color: inherit; overflow-wrap: anywhere; }
 
 .app-shell { min-height: 100vh; }
 .sidebar { position: fixed; inset: 0 auto 0 0; display: flex; flex-direction: column; width: var(--sidebar); padding: 27px 19px 19px; color: #eaf2ef; background: radial-gradient(circle at 18% 1%, rgba(84, 171, 153, .19), transparent 29%), linear-gradient(165deg, #173b40, #0e2329 72%); }
@@ -69,12 +69,17 @@ strong { color: #006e65; font-weight: 800; }
 .book-prose h2:not(:first-child) { margin-top: 78px; border-top: 1px solid #b8c7c1; padding-top: 28px; }
 .book-prose h3 { margin: 37px 0 13px; color: #8c492e; font-family: Georgia, "Noto Serif SC", serif; font-size: 21px; font-weight: 550; line-height: 1.55; }
 .book-prose p { margin: 0 0 19px; color: #2b4745; font-size: 17px; line-height: 2; text-align: justify; text-justify: inter-ideograph; }
+.book-prose p.has-link { text-align: left; text-justify: auto; }
+.book-prose a { color: #006e65; font-weight: 650; text-decoration-color: #79a99d; text-decoration-thickness: 1px; text-underline-offset: .16em; overflow-wrap: anywhere; word-break: break-word; }
+.book-prose a:hover { color: #004f4b; text-decoration-thickness: 2px; }
 .book-prose ul, .book-prose ol { margin: 0 0 22px; padding: 17px 22px 17px 39px; border: 1px solid var(--line); background: rgba(255,255,255,.36); }
 .book-prose li { margin: 0 0 9px; color: #304c48; font-size: 16px; line-height: 1.85; }
 .book-prose li:last-child { margin-bottom: 0; }
-.book-prose code { padding: 1px 5px; color: #8a4329; background: #f6ebe4; font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
-.book-prose pre { overflow-x: auto; margin: 28px 0; padding: 22px 24px; color: #e6f4ef; background: #17363a; box-shadow: 0 12px 30px rgba(22,52,55,.12); }
-.book-prose pre code { padding: 0; color: inherit; background: transparent; font-size: 14px; line-height: 1.8; }
+.book-prose code { padding: 1px 5px; color: #8a4329; background: #f6ebe4; font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; overflow-wrap: anywhere; word-break: break-word; }
+.code-block { overflow: hidden; margin: 28px 0; color: #e6f4ef; background: #17363a; box-shadow: 0 12px 30px rgba(22,52,55,.12); }
+.code-block-header { display: flex; align-items: center; min-height: 30px; padding: 0 14px; border-bottom: 1px solid rgba(211, 241, 231, .15); color: #a5c9c0; background: rgba(1, 20, 23, .24); font-family: "SFMono-Regular", Consolas, monospace; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; }
+.code-block pre { overflow-x: auto; margin: 0; padding: 18px 24px 21px; color: inherit; background: transparent; }
+.code-block pre code { padding: 0; color: inherit; background: transparent; font-size: 14px; line-height: 1.8; white-space: pre; overflow-wrap: normal; word-break: normal; }
 .table-wrap { overflow-x: auto; margin: 26px 0; border: 1px solid #d7e3dd; background: #fbfdfb; }
 .book-prose table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: .94rem; line-height: 1.65; }
 .book-prose th, .book-prose td { padding: 12px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid #dfe8e3; }
