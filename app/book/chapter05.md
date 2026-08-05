@@ -74,6 +74,24 @@ LEFT JOIN purchase_order o
 
 聚合先分组后计算。`WHERE` 在聚合前过滤行，`HAVING` 在聚合后过滤组。窗口函数如 `row_number() over (partition by user_id order by created_at)` 能在不折叠行的情况下给每位用户的订单编号，适用于“每个用户最新一笔订单”等问题。遇到慢查询，先确认语义：少一个连接条件会把两张表相乘，再好的索引也救不了错误结果。
 
+“每门课成绩前三名”这类面试题不要把 `LIMIT 3` 写在全表末尾；它要先在**每个课程分组内**排名。若并列第三名也都要保留，应选择 `RANK` 或 `DENSE_RANK`，而不是机械使用 `ROW_NUMBER`：
+
+```sql
+WITH ranked AS (
+  SELECT course_id, student_id, score,
+         DENSE_RANK() OVER (
+           PARTITION BY course_id
+           ORDER BY score DESC
+         ) AS score_rank
+  FROM course_score
+)
+SELECT course_id, student_id, score
+FROM ranked
+WHERE score_rank <= 3;
+```
+
+窗口函数不会替你消除排序成本。数据量大时仍要检查 `course_id`、`score` 的访问路径、实际返回行数和执行计划；“每组前三”常需要读到每组边界，不能仅因最后只返回少数行就假定只扫描了少数行。
+
 ### 读懂执行计划
 
 `EXPLAIN` 给出优化器估算的计划；`EXPLAIN (ANALYZE, BUFFERS)` 会真正执行查询并报告实际时间、实际行数和缓冲区 I/O。由于后者会执行写语句，分析可回滚的 `UPDATE` 或 `DELETE` 可用 `BEGIN; EXPLAIN (ANALYZE, BUFFERS) UPDATE ...; ROLLBACK;`；有外部副作用的程序调用不应在生产上随意分析。阅读计划可遵循三步：从缩进看输入树；比较每个节点的 `rows` 估计值与 `actual rows`；找总耗时、循环次数和读盘最多的位置。一个节点“估计 10 行、实际 100 万行”常意味着统计信息过旧、列之间存在相关性、谓词写法使估计困难，或参数值分布差异很大。
@@ -85,6 +103,8 @@ LEFT JOIN purchase_order o
 索引是额外维护的数据结构，记录键值与行位置或行版本。它能减少读取的数据页，却占磁盘、缓存和写入成本：一次 `INSERT`、`UPDATE`、`DELETE` 不仅改表，还可能改多个索引。**索引不是越多越好**；应围绕高频、耗时、选择性足够的查询设计，并定期检查是否真的使用。
 
 PostgreSQL 默认且最常见的是 B-tree。可以把它看作页化的平衡搜索树：内部页保存分隔键并指向子页，叶子页按键有序，扇出很高，因此即使有大量记录，根到叶的层数也很少。范围条件、相等条件和与索引顺序一致的排序都适合 B-tree。它不是哈希表：哈希擅长等值定位，而 B-tree 的有序性同时支持 `>=`、`BETWEEN`、`ORDER BY`。全文、数组或 JSON 包含查询常需要 GIN；按物理位置高度相关的大型时间序列表可考虑 BRIN；选择索引类型应从操作符和数据分布出发。
+
+MySQL/InnoDB 的问法常会换成“聚簇索引和二级索引”。在 InnoDB 中，主键通常就是**聚簇索引**：叶子记录保存整行数据；二级索引的叶子记录保存二级键和主键值。用二级索引找到但又要读取不在该索引中的列时，数据库通常还要拿主键回到聚簇索引取整行，这一额外查找常被称为**回表**；若二级索引已经包含查询所需全部列，就可能避免回表。它解释了两条实践规则：主键应稳定且尽量短——它会被复制进每个二级索引；覆盖索引有价值但会扩大写放大和内存占用。聚簇索引是 InnoDB 的具体存储组织，不可泛化成“所有数据库的主键都把行物理排好”。
 
 为前述订单查询，一个常见索引是：
 
@@ -103,6 +123,18 @@ INCLUDE (total_cents);
 ### 高频辨析一：索引与缓存
 
 **索引**是数据库内部按键定位行的持久数据结构，仍以数据库中的当前事务语义为准；**缓存**是把结果或对象副本放到更快的位置，例如应用内存、Redis 或 CDN。索引通常不改变“谁负责数据正确性”，缓存却引入失效、过期、击穿和读旧数据的问题。订单按用户查得慢，先看是否缺少合适索引和是否返回过多列；不是一开始就把结果塞进缓存。缓存适合重复读多、允许一定陈旧或有明确失效协议的数据，不能替代约束和事务。
+
+### 缓冲池、脏页与检查点：查询一次并不等于磁盘读一次
+
+数据库通常把最近访问的数据页和索引页保存在**缓冲池（buffer pool/shared buffers）**中。查询先通过索引或扫描定位逻辑页；页已在内存就直接读取，未命中才触发存储 I/O。修改时，事务把恢复所需记录先写入 WAL/redo log，再在内存页上形成**脏页**；后台刷页把它们逐步写回数据文件。因而事务提交通常要求恢复日志到达规定的持久化点，却不要求所有被改数据页当场同步落盘。检查点记录可作为恢复起点的进度，并推进脏页写回；检查点太激进会造成 I/O 尖峰，太稀疏会拉长恢复时间并增加日志保留压力。
+
+“缓冲池命中率高”也不是越接近 100% 越好。全表报表可能有意顺序扫描并挤占工作集；连接池过大可能让更多查询同时争抢缓冲池和 I/O；一次冷启动则会经历缓存预热。排查数据库 I/O 要同时看逻辑读与物理读、缓冲池命中、脏页与刷写、WAL 生成、checkpoint、查询计划和存储延迟，不能见到磁盘繁忙就只加内存，也不能把操作系统页缓存与数据库缓冲池当成同一个统计口径。
+
+### B+ 树与 LSM 树：读放大、写放大和空间放大的交换
+
+B+ 树把有序键维护在可分裂、合并的页结构中，点查、范围扫描和更新都较稳定，关系数据库索引常采用这一家族。**LSM tree（Log-Structured Merge-Tree）**则先把写入追加到日志并放入内存有序结构，随后刷成不可变的 SSTable，再由后台 compaction 合并层级和清理旧版本。它把随机小写转换成顺序写，适合高写入吞吐；代价是一次读可能检查多个层级并依赖 Bloom Filter/索引，compaction 会消耗 CPU、I/O 和临时空间，旧版本在合并前也会带来空间放大。
+
+选择不能简化为“LSM 写快、B+ 树读快”。更新模式、点查与范围查比例、值大小、写入突发、压缩、后台 I/O 预算、读延迟尾部和恢复需求都会改变结论。LSM 的 memtable 不是可靠真源，仍需 WAL；SSTable 不可变也不表示没有写放大。面试若问 LevelDB/RocksDB，应能沿着 `WAL → memtable → immutable memtable → SSTable → compaction` 说明数据路径，并指出压实落后会同时伤害读放大、空间和尾延迟。
 
 ## 5.4 事务：把一组变化作为一个业务动作
 
@@ -244,5 +276,6 @@ SQL 的难点不只是会写 `SELECT`，还在于结果的语义。`NULL` 表示
 
 - [PostgreSQL 18：索引总览](https://www.postgresql.org/docs/current/indexes.html)；[多列索引](https://www.postgresql.org/docs/current/indexes-multicolumn.html)；[仅索引扫描与覆盖索引](https://www.postgresql.org/docs/current/indexes-index-only-scans.html)。
 - [使用 EXPLAIN](https://www.postgresql.org/docs/current/using-explain.html)；[检查索引使用情况](https://www.postgresql.org/docs/current/indexes-examine.html)。
+- [MySQL InnoDB Buffer Pool](https://dev.mysql.com/doc/refman/en/innodb-buffer-pool.html)：缓冲池、脏页和后台刷写的具体实现入口；[RocksDB Overview](https://github.com/facebook/rocksdb/wiki/RocksDB-Overview)：WAL、memtable、SST 与 compaction 的 LSM 数据路径。
 - [并发控制、隔离级别与锁](https://www.postgresql.org/docs/current/mvcc.html)；[事务隔离](https://www.postgresql.org/docs/current/transaction-iso.html)。
 - [备份与恢复概览](https://www.postgresql.org/docs/current/backup.html)；[SQL 命令：pg_dump](https://www.postgresql.org/docs/current/app-pgdump.html)。

@@ -6,19 +6,19 @@ import test from "node:test";
 const bookRoot = new URL("../app/book/", import.meta.url);
 
 const requiredConcepts = {
-  "chapter01.md": ["不变量", "动态规划", "BFS"],
-  "chapter02.md": ["用户态", "系统调用", "happens-before", "死锁"],
-  "chapter03.md": ["最长前缀匹配", "ARP", "PMTUD", "拥塞控制", "HTTP 缓存"],
+  "chapter01.md": ["不变量", "动态规划", "BFS", "LruCache"],
+  "chapter02.md": ["用户态", "系统调用", "happens-before", "死锁", "僵尸进程", "epoll", "页缓存", "sendfile", "伙伴系统", "VFS", "inode"],
+  "chapter03.md": ["最长前缀匹配", "ARP", "PMTUD", "拥塞控制", "HTTP 缓存", "五元组", "Content-Length", "request smuggling"],
   "chapter04.md": ["RPC", "GraphQL", "任务资源", "幂等键"],
-  "chapter05.md": ["LEFT JOIN", "执行计划", "WAL", "PITR"],
-  "chapter06.md": ["maxmemory", "淘汰策略", "异步", "哈希槽"],
-  "chapter07.md": ["追加事件流", "生产者确认", "分区", "幂等键"],
+  "chapter05.md": ["LEFT JOIN", "执行计划", "WAL", "PITR", "DENSE_RANK", "聚簇索引", "缓冲池", "LSM tree"],
+  "chapter06.md": ["maxmemory", "淘汰策略", "异步", "16,384", "hash tag", "热 key", "多级缓存"],
+  "chapter07.md": ["追加事件流", "生产者确认", "分区", "幂等键", "rebalance", "lag", "ISR", "min.insync.replicas"],
   "chapter08.md": ["XSS", "CSRF", "SSRF", "参数化"],
-  "chapter09.md": ["性质测试", "变异测试", "并发", "集成测试"],
+  "chapter09.md": ["性质测试", "变异测试", "并发", "集成测试", "等价类", "边界值", "决策表", "状态迁移"],
   "chapter10.md": ["标签基数", "上下文传播", "采样", "错误预算"],
-  "chapter11.md": ["Deployment", "Service", "NetworkPolicy", "ServiceAccount"],
-  "chapter12.md": ["法定人数", "fencing token", "CRDT", "心跳"],
-  "chapter13.md": ["评测集", "降级路径", "Run", "错误预算"],
+  "chapter11.md": ["Deployment", "Service", "NetworkPolicy", "ServiceAccount", "veth", "DNAT", "CNI"],
+  "chapter12.md": ["法定人数", "fencing token", "CRDT", "心跳", "一致性哈希", "最少连接", "全局 ID", "在线重分片", "TCC"],
+  "chapter13.md": ["评测集", "降级路径", "Run", "错误预算", "Recall@k", "版本化索引"],
 };
 
 test("ships thirteen independently readable, non-template chapters", async () => {

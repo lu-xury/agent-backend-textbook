@@ -162,6 +162,56 @@ def first_at_least(items: list[int], target: int) -> int:
 
 常用的算法范式各解决不同结构的问题。**分治**把问题拆成规模更小、结构相同的子问题，再合并结果；归并排序因此稳定地达到 `O(n log n)`，代价是额外空间。**贪心**每步选当前看来最优的局部选择，只有能证明贪心选择性质时才正确，不能因为“看起来合理”就使用。**动态规划**把有重叠子问题的递归状态保存起来，关键是状态定义、转移方程、初值和计算顺序，而不是背 `dp` 数组。**BFS**按距离层次扩展，适合无权图最短路；**DFS**适合遍历、连通性、拓扑排序和回溯；带非负权重的最短路通常需要 Dijkstra 一类算法。后端最常见的收益不是手写这些算法，而是能识别：一次 N+1 查询、无界重试、逐条扫描日志或在列表头部反复插入，是否把原本可索引、批量或队列化的问题写成了随规模失控的算法。
 
+## 8.2 手写题怎样连接到工程：以 LRU 为例
+
+LRU（least recently used）缓存要求容量满时淘汰**最久没有被访问**的项。若只用数组，每次访问都要在线性表中查找并移动元素，`get` 或 `put` 至少有一个会变成 `O(n)`；高频题的要求通常是期望 `O(1)`。组合**哈希表**和**双向链表**即可：哈希表从 key 找到节点，双向链表把最近使用的节点放在表头、最旧节点放在表尾；命中时把节点移到表头，满时删除表尾。这里的核心不是背容器组合，而是维护两条不变量：`positions_` 中的每个迭代器都指向 `items_` 的唯一节点；链表顺序始终从新到旧。
+
+```cpp
+#include <cstddef>
+#include <list>
+#include <optional>
+#include <unordered_map>
+#include <utility>
+
+class LruCache {
+ public:
+  explicit LruCache(std::size_t capacity) : capacity_(capacity) {}
+
+  std::optional<int> get(int key) {
+    const auto found = positions_.find(key);
+    if (found == positions_.end()) return std::nullopt;
+
+    // splice 只移动链表节点；该节点的迭代器仍然有效。
+    items_.splice(items_.begin(), items_, found->second);
+    return found->second->second;
+  }
+
+  void put(int key, int value) {
+    if (capacity_ == 0) return;
+    if (const auto found = positions_.find(key); found != positions_.end()) {
+      found->second->second = value;
+      items_.splice(items_.begin(), items_, found->second);
+      return;
+    }
+
+    if (items_.size() == capacity_) {
+      positions_.erase(items_.back().first);
+      items_.pop_back();
+    }
+    items_.emplace_front(key, value);
+    positions_[key] = items_.begin();
+  }
+
+ private:
+  using Entry = std::pair<int, int>;
+  std::size_t capacity_;
+  std::list<Entry> items_;  // 表头最新，表尾最旧。
+  std::unordered_map<int, std::list<Entry>::iterator> positions_;
+};
+```
+
+`std::unordered_map` 的常见查找是期望 `O(1)`，`std::list::splice` 与删除已知节点也是常数时间，因此上面的两种操作符合题目目标；最坏情况仍会受哈希碰撞影响。这个类**不是线程安全的**：两个线程同时改 `items_` 或 `positions_` 会破坏不变量。实际服务还必须决定 TTL、容量、淘汰指标、是否允许陈旧值以及锁的粒度；很多场景直接使用经过压测的缓存库或 Redis，比手写共享 LRU 更合适。面试中先给出数据结构、不变量和复杂度，再主动指出并发与失效边界，比只写完代码更能证明理解。
+
 ## 9. 易混概念与面试辨析
 
 ### 变量、对象和值有什么区别？

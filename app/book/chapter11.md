@@ -133,6 +133,10 @@ Kubernetes 的核心不是一组 YAML 关键字，而是**声明期望状态并�
 
 **Pod**是最小可调度单元，其中的容器共享网络命名空间与 localhost，通常也共享挂载卷；它不是一个永远不变的服务器。Pod 重建后 IP 会变化，持久客户端不应把 Pod IP 写进配置。**Service**为一组匹配标签、且处于就绪状态的后端提供稳定名称与虚拟入口；集群 DNS 让 `orders.default.svc` 解析到该入口，负载均衡再把连接分发给 Endpoint。Ingress 或 Gateway 把外部 HTTP/TLS 路由送入 Service，但不是所有网络策略、认证、WAF 或限流都会自动具备。服务发现解决“到哪儿”，负载均衡解决“选哪个后端”，网络策略解决“哪些 Pod 可以通信”，三者要分开配置和排障。
 
+一次 Pod 出站请求通常从 Pod 的 network namespace 经虚拟网卡对（常见为 **veth**）、CNI 插件配置的路由/网桥或覆盖网络到达节点，再路由到本节点或其他节点的 Pod；访问 Service 虚拟 IP 时，还会由 kube-proxy 的 iptables/IPVS 规则或实现等价语义的 eBPF 数据面选择 Endpoint 并做转发/DNAT。具体实现会变化，Kubernetes 只规定网络模型与 Service 语义，不规定所有集群都必须经过同一条 iptables 链。跨节点和出集群流量还可能发生 SNAT，影响服务端看到的源地址；需要客户端 IP 时要理解代理、`externalTrafficPolicy` 与负载分布/可达性的取舍。
+
+因此“Pod 能解析 Service 名但连接超时”至少要分层检查：DNS 记录、Service selector 与 EndpointSlice、目标 Pod readiness、端口/targetPort、节点与 CNI 路由、NetworkPolicy、宿主机防火墙和应用监听地址。NetworkPolicy 只有在网络插件实现它时才产生隔离效果，且它控制网络可达性，不验证 HTTP 用户身份。抓包也要选对 namespace 和链路点：在 Pod 内、宿主机 veth 端、节点外网卡看到的源/目标地址可能因 DNAT/SNAT 不同，不能把任意一个点的地址直接当作端到端事实。
+
 容器安全仍建立在 Linux 权限上。工作负载应尽量以非 root 用户运行，丢弃不必要的 capability，使用只读根文件系统和最小镜像；Secret 不应硬编码进镜像、命令行或普通日志。Kubernetes RBAC 控制某个 ServiceAccount 可调用哪些 Kubernetes API，不能代替应用对最终用户的授权；NetworkPolicy 能约束 Pod 间流量，不能替代 TLS、输入校验或数据库权限。生产发布还应限定镜像来源与签名/扫描、审计谁改了何种配置，并把数据库、队列与外部网络的凭据按最小权限分发。
 
 ## 本章练习
@@ -169,4 +173,5 @@ Kubernetes 的核心不是一组 YAML 关键字，而是**声明期望状态并�
 - [The Twelve-Factor App](https://12factor.net/) 与 [Disposability](https://12factor.net/disposability)：build/release/run、配置与可处置进程的原始方法论。
 - [Kubernetes：Liveness, Readiness and Startup Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)：三种探针的动作边界。
 - [Kubernetes Secrets](https://kubernetes.io/docs/concepts/configuration/secret/)、[DNS for Services and Pods](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/)：Secret 安全边界与服务发现。
+- [Kubernetes Cluster Networking](https://kubernetes.io/docs/concepts/cluster-administration/networking/) 与 [Services, Load Balancing, and Networking](https://kubernetes.io/docs/concepts/services-networking/)：Pod 网络模型、CNI 与 Service 转发语义。
 - [Kubernetes Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) 与 [Resource Management](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/)：滚动更新、request/limit 与 cgroup 资源行为。
