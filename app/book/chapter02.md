@@ -6,6 +6,12 @@
 
 把进程理解为“程序”并不准确。程序是磁盘上的静态文件；进程是它被加载后的一组动态状态。一个进程至少包含可执行指令、数据、当前执行位置、寄存器状态，以及它拥有或引用的内核对象。服务器的配置文件相同，并不意味着两个进程会共享内存中的缓存；默认情况下，一个进程把字典写入内存，另一个进程看不见。这个隔离让故障更容易收敛，也意味着跨进程协作需要 Socket、管道、共享内存或数据库等显式通信手段。
 
+### 进程状态、僵尸与孤儿：退出不等于已经消失
+
+调度器需要区分“此刻能运行”和“仍然存在但在等待”。不同内核的状态名称不同，但后端排障通常关心：**runnable/running** 表示可占用或正在占用 CPU；**interruptible sleep** 表示等待 I/O、锁或定时器且通常可被信号唤醒；**uninterruptible sleep** 往往表示等待某些内核 I/O，任务可能暂时无法响应普通信号；**stopped/traced** 表示被作业控制或调试器停止；**exited** 表示用户态执行已结束。`ps` 的单个状态字母只是一个时刻的快照，不能单独用来断言“CPU 一定慢”或“磁盘一定坏”，应与 run queue、I/O 延迟和应用指标结合。
+
+子进程调用 `exit` 后，内核还需要把退出码和资源使用情况交给父进程读取；在父进程调用 `wait`/`waitpid` 前，它会保留一个很小的**僵尸进程（zombie）**记录。僵尸不再执行，也通常不占用其原来的用户态内存，但会占 PID/进程表槽位；持续累积通常说明父进程没有正确回收子进程。**孤儿进程（orphan）**则是父进程先退出、子进程仍运行；它会被 init/systemd 或配置的 subreaper 接管，之后仍可被回收。孤儿不是天然泄漏，僵尸才是“已经退出却未被回收”的问题。Web 服务若自己拉起 worker，应由一个明确的监督者 `wait` 子进程；不要依靠反复 `kill -9` 掩盖生命周期错误。
+
 ### 地址空间为什么重要
 
 **虚拟地址空间**是进程眼中可使用的地址范围，而非它已经占有的物理内存。程序里的指针，例如 `0x7f...`，先经页表翻译，才可能对应某个物理页。每个进程通常有自己的映射和页表，所以两个进程都可以把某个变量放在“看起来相同”的虚拟地址，却不会互相覆盖。内核借此同时实现地址隔离、内存保护和按需分配。
@@ -50,6 +56,33 @@ CPU 在任一时刻只执行某个逻辑 CPU 上的一个**可调度执行实体
 
 非阻塞 Socket 在暂时没有数据可读或缓冲区没有空间可写时通常返回 `EAGAIN`，而不是让线程睡眠。事件循环应把当前解析进度保存到连接状态中，等下一次就绪事件后继续。边沿触发的 `epoll` 尤其要求程序把非阻塞 fd 持续读或写到 `EAGAIN`；只读一小段就回去等待，可能再也收不到新的边沿通知，从而形成“明明有数据却卡住”的连接。初学时优先理解默认的水平触发语义；只有在压测证明需要、并能正确维护状态机时再使用边沿触发。
 
+### `select`、`poll`、`epoll` 与 Reactor：谁负责发现就绪连接
+
+它们都回答“哪些 fd 现在可以尝试 I/O”，而不是“哪条业务消息已经完整”。`select` 以位集合传入 fd，在常见 Linux 环境中受 `FD_SETSIZE`（通常 1024）限制，并且每次调用都要重建/检查集合；`poll` 用数组表示兴趣事件，摆脱了这个位集合上限，但每次仍要提供并扫描关注集合；`epoll` 在内核中维护 interest list 和 ready list，`epoll_wait` 只返回已就绪项，因此特别适合大量长连接。它们的差别不是“epoll 永远更快”：连接数小、代码路径短时，`poll` 的简单性可能更有价值；磁盘普通文件也不适合被当作网络 Socket 那样依赖就绪通知。
+
+**Reactor** 是常见的组织方式：一个或少数 I/O 线程等待就绪事件，按 fd 找到连接状态机，读取到应用缓冲区并解析完整帧；耗 CPU 的工作再交给有界 worker 池。它避免了“一连接一线程”的线程数膨胀，却把所有权放大为关键问题：同一连接应由谁修改读写缓冲、何时关闭、worker 的结果如何回到 I/O 线程。下面只是“可读事件”的最小骨架；它刻意没有假装是完整 HTTP 服务器。
+
+```cpp
+void on_readable(Connection& connection) {
+  char buffer[8192];
+  for (;;) {
+    const ssize_t n = ::recv(connection.fd, buffer, sizeof buffer, MSG_DONTWAIT);
+    if (n > 0) {
+      connection.input.append(buffer, static_cast<std::size_t>(n));
+      dispatch_complete_frames(connection);  // 可能留下半帧，等待下次可读。
+      continue;
+    }
+    if (n == 0) { close_connection(connection); return; }  // 对端有序关闭。
+    if (errno == EAGAIN || errno == EWOULDBLOCK) return;   // 本轮读空。
+    if (errno == EINTR) continue;
+    close_connection(connection);                           // 记录具体 errno。
+    return;
+  }
+}
+```
+
+循环读到 `EAGAIN` 对边沿触发尤其必要；对水平触发也不会破坏语义。真正的实现还要控制单连接单轮读取上限，防止一个持续活跃的 fd 饿死其他连接；写路径也要处理部分写入，在 `EAGAIN` 时登记 `EPOLLOUT`，缓冲清空后取消写关注。所谓“百万连接”首先是 fd、内核 socket 缓冲、连接状态内存、TLS 成本、accept 队列和业务处理能力的总预算，不能仅靠把 `epoll` 换进代码获得。
+
 一个简化的 Python 例子如下。它展示“等待时让出”，但生产代码仍应加上总超时、连接池、限流和异常分类：
 
 ```python
@@ -85,6 +118,12 @@ async def render_page(client, user_id):
 
 **OOM（out of memory）**是内核在无法满足内存分配并且回收等手段无效时采取保护动作的统称之一。在宿主机内存紧张时可能触发全局 OOM；在 cgroup 设置内存限制时，也可能发生 cgroup 范围的 OOM，即宿主机尚有余量但这个工作负载已超出自己的配额。内核或运行时可能终止某个进程以恢复可用内存。容器平台上看到退出码 137 通常说明进程收到过 `SIGKILL`，但它**不是 OOM 的充分证据**：人工强杀、超出优雅退出期限等也会造成同样结果。诊断要同时看容器状态、cgroup `memory.events`、内核日志、RSS 曲线和应用的请求/队列变化。
 
+### 用户态分配器、伙伴系统与 Slab：一次 `malloc` 不等于一次物理页申请
+
+应用调用 `malloc`、C++ `new` 或语言运行时分配对象时，通常先进入**用户态分配器**。分配器从已经取得的 arena、span 或空闲链表中切出一块；现有区域不足时，才通过 `brk`/`mmap` 等方式向内核扩大虚拟映射。释放对象也常只是把块还给进程内分配器，未必立刻归还内核，所以“业务对象已释放”与“RSS 立即下降”不是同一件事。大量不同尺寸对象、跨线程 arena 和长期存活小对象会产生内部或外部碎片；排查应同时看语言堆、分配器统计、匿名映射和 RSS，不能只凭对象计数判断泄漏。
+
+内核还要管理物理页与自己的小对象。Linux 常用**伙伴系统（buddy allocator）**按 2 的幂次连续页块分配和合并物理内存，适合页级请求，却可能因长期切分形成高阶连续页不足；Slab/SLUB 一类分配器在页之上为 `inode`、目录项、Socket 等固定或相近尺寸的内核对象维护缓存，减少反复初始化与碎片。二者都不等于应用堆分配器：用户态分配器管理某个进程取得的虚拟区域，伙伴系统管理物理页，Slab 管理内核对象。机器还有很多空闲内存却分配不了一大块连续页，和进程因堆碎片变大，是不同层面的故障。
+
 ## 2.6 文件描述符、Socket 与管道
 
 **文件描述符（file descriptor，fd）**是进程在用户态持有的一个小整数，用来索引内核维护的已打开对象。文件、Socket、管道、标准输入输出、`epoll` 实例都可以通过 fd 操作；这就是 Unix “很多东西都能像文件一样读写”的统一接口。fd 不是网络连接本身，更不是全局唯一 ID；它在一个进程的 fd 表中才有意义，关闭后其数值可能很快被复用。
@@ -92,6 +131,18 @@ async def render_page(client, user_id):
 打开文件、`accept()` 新连接、创建 pipe 或 socket 都会消耗 fd。一个反向代理每接受一条 TCP 连接，通常会多持有一个连接 fd；忘记关闭响应体、客户端连接或临时文件，会使 fd 数不断上升，最后得到 `EMFILE`（进程可打开文件数达到限制）或触及系统级限制。排障时可用 `ls /proc/<pid>/fd | wc -l` 观察数量，用 `lsof -p <pid>` 或 `/proc/<pid>/fd` 看对象类型；但计数增长只能说明泄漏方向，还要顺着请求生命周期定位谁保留了引用。
 
 **Socket**是用户进程与内核协议栈之间的端点接口。TCP Socket 是双向字节流，可 `connect`、`listen`、`accept`、`send`、`recv`；UDP Socket 则面向数据报。**管道（pipe）**用于同一主机上进程间传递顺序字节流，典型匿名管道有读端和写端两个 fd；写端全部关闭后，读端读尽缓冲区会见到 EOF。它们都可作为 fd 被 `read`、`write` 或等待就绪，但 Socket 有网络地址、连接和协议语义，管道没有。不要把一次 `read` 返回当成一条完整业务消息：管道和 TCP 都是流，应用协议必须自己定义边界。
+
+### 页缓存、`mmap` 与“零拷贝”：先问数据经过哪里
+
+普通文件的 `read` 通常先让内核把磁盘块放入**页缓存（page cache）**，再把所需字节复制到用户缓冲区；后续读取可能直接命中内存，所以“调用了磁盘文件读取 API”不等于本次一定发生物理磁盘 I/O。`mmap` 把文件页映射进进程虚拟地址空间，程序通过普通内存访问触发按需缺页，不必先显式 `read` 到另一块用户缓冲区；但它仍要处理页错误、文件截断、脏页回写和访问模式，不能简单理解为“永远更快”。数据库会根据自己的缓存、写前日志和崩溃恢复设计决定使用页缓存、直接 I/O 还是两者组合。
+
+网络文件发送中的“零拷贝”通常表示避免一次或多次用户态中转复制，例如 Linux `sendfile` 可让内核把文件数据从页缓存送到 Socket 路径。它不表示 CPU、DMA、内核元数据或协议处理完全没有复制和成本，也不适用于必须在用户态逐字节压缩、加密或改写内容的路径。面试中应先画出“存储设备 → 内核缓存 → 用户缓冲区 → Socket 缓冲区 → 网卡”的数据路径，再说明具体 API 省掉哪一步；只背“少两次拷贝、少两次切换”容易忽略内核版本、硬件和 TLS 路径差异。
+
+### VFS、inode、目录项与链接：文件名不是文件本身
+
+**VFS（Virtual File System）**为不同文件系统提供统一的 `open/read/write/stat` 接口。路径解析时，内核逐级查找目录项（dentry）并定位 inode；**inode**保存文件类型、权限、所有者、大小、时间和数据块映射等元数据，通常不保存人类看到的文件名。目录维护“名字 → inode”的映射，因此重命名常主要改变目录项，而不是复制文件内容。打开文件后，进程 fd 指向内核的打开文件对象；即使路径被删除，只要仍有打开引用，对应数据通常要到最后一个引用关闭后才真正回收。这解释了日志文件 `rm` 后磁盘空间为何可能没有释放：旧进程仍持有已删除文件，应定位 fd 并让应用重新打开或重启，而不是继续删除其他文件。
+
+**硬链接**是另一个目录项指向同一个 inode，不能跨文件系统，通常也不允许普通用户给目录创建硬链接；删除其中一个名字不会删除仍有其他链接的文件。**符号链接（软链接）**则是保存另一条路径的特殊文件，可跨文件系统，但目标移动或删除后会悬空。权限检查还要沿路径逐级进行：目录的执行权限表示可以穿越或查找其中名字，读权限表示可以列出目录项，写权限通常与执行权限共同决定能否创建或删除目录项；删除文件主要受父目录权限影响，不是只看文件自身是否可写。`/proc` 和 `/sys` 多数是内核导出的虚拟视图，不是磁盘上的普通业务文件；读取它们是在查看进程、设备和内核状态。
 
 ## 2.7 信号与优雅退出
 
@@ -175,5 +226,6 @@ async def render_page(client, user_id):
 - Linux man-pages, [epoll(7)](https://man7.org/linux/man-pages/man7/epoll.7.html)、[socket(7)](https://man7.org/linux/man-pages/man7/socket.7.html)：就绪通知、边沿触发与非阻塞 Socket。
 - Linux man-pages, [signal(7)](https://man7.org/linux/man-pages/man7/signal.7.html)、[signal-safety(7)](https://man7.org/linux/man-pages/man7/signal-safety.7.html)、[kill(2)](https://man7.org/linux/man-pages/man2/kill.2.html)、[proc_pid_status(5)](https://man7.org/linux/man-pages/man5/proc_pid_status.5.html)：信号语义、进程状态与 RSS 字段。
 - Linux Kernel Documentation, [Control Group v2](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html) 与 [Namespaces](https://man7.org/linux/man-pages/man7/namespaces.7.html)：cgroup 层级与 Linux 命名空间。
+- Linux Kernel Documentation, [Memory Allocation Guide](https://docs.kernel.org/core-api/memory-allocation.html) 与 [The Virtual Filesystem](https://docs.kernel.org/filesystems/vfs.html)：页级/Slab 分配接口，以及 VFS、inode、dentry 与文件对象的关系。
 
 资料链接用于核对操作系统接口与定义；不同 Linux 发行版、容器运行时和语言运行时的默认行为可能不同，部署时应以当前系统的手册页、限制值和运行时文档为准。
