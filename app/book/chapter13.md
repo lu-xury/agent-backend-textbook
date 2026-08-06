@@ -1,6 +1,6 @@
-前十二章讨论的 HTTP、数据库、队列、可观测性和分布式一致性，在 Agent 后端中仍然有效；变化在于系统新增了一个**会生成不确定建议的组件**。大语言模型可以把“帮我取消昨天重复的订单”理解为候选步骤，却不能因此获得取消订单的权限，也不能决定数据库事实。一个可上线的 Agent 后端，核心不是让模型“更像人”，而是把语言理解的弹性限制在输入、规划和解释层，把身份、权限、金额、状态转换、重试和审计继续交给可验证的程序。
+Agent 后端沿用 HTTP、数据库、队列、可观测性和分布式一致性的工程约束，同时增加一个**生成不确定建议的组件**。大语言模型可以把“帮我取消昨天重复的订单”转换为候选步骤，但取消权限和订单事实仍由后端裁决。可上线的 Agent 把语言理解的弹性限制在输入、规划和解释层，把身份、权限、金额、状态转换、重试和审计交给可验证程序。
 
-本章使用一个客服 Agent 作贯穿例子：它可以查询订单、解释退款规则、创建退款草稿；真正退款必须经过业务规则和用户确认。读者应能据此回答三个问题：**模型提出了什么建议；Runtime 实际执行了什么；谁能够证明这次执行被允许。**
+本章使用一个客服 Agent 作贯穿例子：它可以查询订单、解释退款规则、创建退款草稿；真正退款必须经过业务规则和用户确认。设计与审计分别回答：模型提出了什么建议，Runtime 实际执行了什么，以及哪项证据证明执行得到授权。
 
 ## 13.1 LLM 是推理部件，Runtime 才是系统
 
@@ -27,6 +27,18 @@
 **会话（session/conversation）**表示用户持续交谈的逻辑容器，例如同一张工单；**Run**表示 Runtime 为一次用户意图启动的、可追踪的执行尝试；**事件（event）**是 Run 中发生的不可变事实，如 `user_message_received`、`model_requested`、`tool_call_proposed`、`tool_succeeded`、`approval_granted`；**状态机**则规定事件发生后状态能如何变化。这里的会话是对话与业务上下文容器，不等同于保存认证状态的登录 Session；二者可关联，但应分别过期、授权和审计。四者不能混为同一个“聊天记录”字段，否则重试、取消和并发请求很难解释。
 
 例如退款 Run 可以经历 `queued → running → awaiting_approval → running → succeeded`，也可能到 `failed`、`cancelled` 或 `expired`。状态转换应使用数据库条件更新或版本号，避免两个 worker 同时把同一 Run 执行两次：只有状态仍为 `queued` 且版本匹配的 worker 能领取；每次工具调用都带 `run_id`、`step_id` 和稳定的 idempotency key。长任务放入队列后，HTTP 请求只创建 Run 并返回其 ID；前端通过轮询、SSE 或 WebSocket 订阅事件，而不是一直占着一个连接等待模型与所有工具完成。
+
+```mermaid
+stateDiagram-v2
+  [*] --> Running
+  Running --> WaitingApproval: risky tool
+  WaitingApproval --> Running: approved
+  Running --> WaitingTool: execute
+  WaitingTool --> Running: result
+  Running --> Completed: final answer
+  Running --> Cancelled: cancel or budget
+  WaitingTool --> Cancelled: timeout or cancel
+```
 
 取消不是删除记录。用户点击取消时，Runtime 把 Run 标记为“请求取消”，停止再发起新的模型或工具调用，并向仍在运行的、支持取消的任务传播 cancellation token；已提交给不支持取消的邮件、支付或外部工单可能仍会完成，必须在状态中写明“取消请求已接受，结果待确认”。恢复也不是从头再跑：worker 重启后从事件和持久化状态判断最后一个**已确认完成**的步骤，跳过已完成的幂等操作，重新领取可安全重试的步骤。
 

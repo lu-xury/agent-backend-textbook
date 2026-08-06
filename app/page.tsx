@@ -47,6 +47,32 @@ function CodeBlock({ code, language, index }: { code: string; language?: string;
   </div>;
 }
 
+function MermaidDiagram({ code, index }: { code: string; index: number }) {
+  const [svg, setSvg] = useState("");
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setSvg("");
+    setFailed(false);
+    void import("mermaid")
+      .then(({ default: mermaid }) => {
+        mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: "neutral" });
+        return mermaid.render(`book-mermaid-${index}`, code);
+      })
+      .then(({ svg: rendered }) => { if (active) setSvg(rendered); })
+      .catch(() => { if (active) setFailed(true); });
+    return () => { active = false; };
+  }, [code, index]);
+
+  if (failed) return <CodeBlock code={code} language="mermaid" index={index} />;
+  return <figure className="mermaid-block" aria-label="技术流程图">
+    {svg
+      ? <div className="mermaid-svg" dangerouslySetInnerHTML={{ __html: svg }} />
+      : <div className="mermaid-loading" aria-busy="true">图表加载中…</div>}
+  </figure>;
+}
+
 function MarkdownBody({ markdown }: { markdown: string }) {
   const lines = markdown.replace(/\r\n/g, "\n").trim().split("\n");
   const nodes = [];
@@ -68,7 +94,10 @@ function MarkdownBody({ markdown }: { markdown: string }) {
       const code: string[] = [];
       while (index < lines.length && !lines[index].startsWith("```")) code.push(lines[index++]);
       if (index < lines.length) index += 1;
-      nodes.push(<CodeBlock key={nextKey()} index={key} code={code.join("\n")} language={language} />);
+      const source = code.join("\n");
+      nodes.push(language === "mermaid"
+        ? <MermaidDiagram key={nextKey()} index={key} code={source} />
+        : <CodeBlock key={nextKey()} index={key} code={source} language={language} />);
       continue;
     }
 

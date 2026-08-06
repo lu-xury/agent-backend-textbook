@@ -26,12 +26,19 @@ test("preserves fenced code and renders links without putting URL text in justif
       "",
       "    return await load_second(first)",
       "```",
+      "",
+      "```mermaid",
+      "flowchart TD",
+      "  Input --> Output",
+      "```",
     ].join("\n");
 
     const html = renderToStaticMarkup(createElement(Home));
     chapters[0].markdown = original;
 
     assert.match(html, /class="code-block"/);
+    assert.match(html, /class="mermaid-block"/);
+    assert.match(html, /图表加载中/);
     assert.match(html, /first = await load_first\(\)\n\n    return await load_second\(first\)/);
     assert.match(html, /<p class="has-link">/);
     assert.match(html, />官方探针指南<\/a>/);

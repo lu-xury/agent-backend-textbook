@@ -26,18 +26,29 @@ test("ships thirteen independently readable, non-template chapters", async () =>
   assert.equal(files.length, 13, "the textbook must contain exactly thirteen chapter manuscripts");
 
   let totalCjk = 0;
+  let totalDiagrams = 0;
   for (const file of files) {
     const manuscript = await readFile(join(bookRoot.pathname, file), "utf8");
+    const prose = manuscript.replace(/```[\s\S]*?```/g, "");
     const cjk = (manuscript.match(/[\u3400-\u9fff]/g) ?? []).length;
+    const diagrams = (manuscript.match(/^```mermaid$/gm) ?? []).length;
     totalCjk += cjk;
+    totalDiagrams += diagrams;
     assert.ok(cjk >= 6_000, `${file} is too short to be a complete chapter: ${cjk}`);
     assert.ok((manuscript.match(/^## /gm) ?? []).length >= 6, `${file} needs a substantive section structure`);
     assert.equal((manuscript.match(/^```/gm) ?? []).length % 2, 0, `${file} has an unclosed fenced code block`);
     assert.match(manuscript, /练习/, `${file} needs an opportunity to check understanding`);
     assert.doesNotMatch(manuscript, /机制推演|逐步推理|固定学习环节/, `${file} contains retired template wording`);
+    assert.doesNotMatch(
+      prose,
+      /这就?意味着|这是关键|这是核心|值得注意|需要强调|必须指出|重要的是|显而易见|毋庸置疑|本质上|究其根本|原因很简单|取舍是明确的|关键的不变量是|环环相扣|极其|如下所示|请看下表/,
+      `${file} contains avoidable meta-commentary or inflated wording`,
+    );
+    assert.doesNotMatch(prose, /^\*\*(?:练习|答案|问：)/m, `${file} bolds an instructional label instead of a technical term`);
     for (const concept of requiredConcepts[file]) {
       assert.ok(manuscript.includes(concept), `${file} must explain ${concept} as a core concept`);
     }
   }
   assert.ok(totalCjk >= 105_000, `expected a complete condensed textbook, got ${totalCjk} CJK characters`);
+  assert.ok(totalDiagrams >= 10, `expected diagrams for the book's major processes and state transitions, got ${totalDiagrams}`);
 });
