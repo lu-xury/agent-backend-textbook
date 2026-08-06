@@ -28,7 +28,7 @@ CREATE TABLE purchase_order (
 
 ### 范式是减少更新矛盾的工具，不是比赛规则
 
-**规范化**的目标是让每个事实只在一个合理的位置维护，从而避免“同一事实改了一处、另一处没改”的更新异常。第一范式要求一个字段保存一个可操作的值而不是重复组；第二范式关注非键属性不能只依赖复合键的一部分；第三范式进一步避免非键属性经由另一非键属性间接决定。比如 `order_item(order_id, product_id, product_name)` 以 `(order_id, product_id)` 为主键时，`product_name` 只依赖 `product_id`，应放在 `product` 表中。初学时不必背定义，记住一个实用问题：如果修改某个事实必须同时更新很多行，或者删除一行会意外丢掉另一种事实，模式可能混淆了职责。
+**规范化**的目标是让每个事实在一个合理的位置维护，从而减少更新异常。第一范式要求每个行列交点相对于字段定义域保存一个值，并消除同一行中的重复字段组；“原子”由数据模型和查询需求共同决定，例如一个日期可以作为日期类型的单值，而多个电话号码通常应拆成关联行。第二范式关注非键属性对整个复合候选键的完全依赖；第三范式进一步约束非键属性经由另一非键属性形成的传递依赖。比如 `order_item(order_id, product_id, product_name)` 以 `(order_id, product_id)` 为候选键时，`product_name` 只依赖 `product_id`，应放在 `product` 表中。修改某个事实需要同步更新许多行，或删除一行会连带丢失另一类事实，通常说明表中混合了不同职责。
 
 例如把 `order_item` 中的 `product_name`、`current_product_price` 当作“商品当前信息”维护，会在改名、调价时造成大量更新。商品当前名称应在 `product` 表；订单项保存当时成交的 `unit_price_cents`，它记录的是不可变历史。判断字段是否冗余，需要比较它们是否描述同一时刻、同一语义的事实。
 
@@ -74,12 +74,12 @@ LEFT JOIN purchase_order o
 
 聚合先分组后计算。`WHERE` 在聚合前过滤行，`HAVING` 在聚合后过滤组。窗口函数如 `row_number() over (partition by user_id order by created_at)` 能在不折叠行的情况下给每位用户的订单编号，适用于“每个用户最新一笔订单”等问题。遇到慢查询，先确认语义：少一个连接条件会把两张表相乘，再好的索引也救不了错误结果。
 
-“每门课成绩前三名”这类面试题不要把 `LIMIT 3` 写在全表末尾；它要先在**每个课程分组内**排名。若并列第三名也都要保留，应选择 `RANK` 或 `DENSE_RANK`，而不是机械使用 `ROW_NUMBER`：
+“每门课成绩前三名”这类问题不能把 `LIMIT 3` 写在全表末尾；它要先在**每个课程分组内**排名。若采用竞赛名次并保留并列第三名，应使用 `RANK`：分数为 `100, 100, 90` 时名次为 `1, 1, 3`。若需求是“前三个不同分数层级”，才使用 `DENSE_RANK`，同一组名次为 `1, 1, 2`。`ROW_NUMBER` 则会给并列记录任意分出不同序号。下面按竞赛名次实现：
 
 ```sql
 WITH ranked AS (
   SELECT course_id, student_id, score,
-         DENSE_RANK() OVER (
+         RANK() OVER (
            PARTITION BY course_id
            ORDER BY score DESC
          ) AS score_rank
@@ -144,10 +144,13 @@ B+ 树把有序键维护在可分裂、合并的页结构中，点查、范围�
 BEGIN;
 UPDATE account SET balance_cents = balance_cents - 1000
 WHERE id = $1 AND balance_cents >= 1000;
--- 应检查受影响行数必须为 1，否则余额不足或账户不存在
+-- 应用在继续前要求受影响行数为 1；否则立即 ROLLBACK 并停止
 UPDATE account SET balance_cents = balance_cents + 1000 WHERE id = $2;
+-- 应用再次要求受影响行数为 1；否则 ROLLBACK
 COMMIT;
 ```
+
+这段 SQL 展示事务边界，行数检查属于驱动程序的控制流：应用必须在执行第二条 `UPDATE` 前读取扣款结果，并在任一次检查失败时结束当前路径且回滚。生产实现还应阻止同一账户转给自身，并用约束或固定锁顺序维护账户与币种等业务不变量。
 
 ACID 是理解事务的坐标，而非“数据库永远不会出错”的承诺。**原子性（Atomicity）**指事务的改动要么全部提交、要么全部回滚；**一致性（Consistency）**指提交前后满足数据库约束及应用定义的不变量；**隔离性（Isolation）**规定并发事务彼此可见的方式；**持久性（Durability）**指成功提交后，崩溃恢复仍能保留结果。以 PostgreSQL 为例，预写日志（WAL）等恢复机制支撑持久性；但“已提交”不等于已经同步到所有异地副本，也不等于外部支付平台已经完成扣款。
 
@@ -244,16 +247,16 @@ SQL 的难点不只是会写 `SELECT`，还在于结果的语义。`NULL` 表示
 
 执行计划是优化器基于统计信息选择的物理执行方案，不是 SQL 语义的替代品。顺序扫描在小表或需要返回大比例行时往往正确；索引扫描适合选择性高的条件；连接可用 nested loop、hash join 或 merge join，各自适合不同基数、排序和内存条件。阅读 `EXPLAIN (ANALYZE, BUFFERS)` 时要比较估计行数与实际行数、循环次数、耗时、共享缓冲命中/读取与临时文件；估计相差很大时检查统计信息、数据倾斜和谓词表达式，而不是先强制某个索引。
 
-**预写日志（WAL）**遵循“先让描述修改的日志持久化，再允许相应数据页延后落盘”的顺序。提交时数据库要确保恢复所需的 WAL 到达持久化介质；崩溃后从最近检查点开始重放已提交修改，撤销未完成修改，从而把数据页带回一致状态。WAL 解释了为什么“已提交”通常能在进程或机器故障后恢复，却不等于备份、异地容灾或外部服务副作用已经完成。逻辑备份解决对象级导出和迁移，物理基础备份加归档 WAL 才能支持按时间点恢复；RPO、RTO 与实际 restore 演练应写进系统设计，而不是放在上线后的待办事项。
+**预写日志（WAL）**遵循“描述数据页修改的 WAL 记录先持久化，相应脏页随后才能落盘”的顺序。事务修改共享缓冲区中的页面时就会形成脏页并生成 WAL；同步提交需要把包含提交记录的 WAL 刷到规定的持久化位置，不要求本事务的全部脏页同时写回数据文件。崩溃恢复从最近检查点确定的 REDO（重做）位置向前重放必要 WAL，使数据页恢复到一致状态。PostgreSQL 不依赖传统 undo 日志把未提交元组逐条改回旧值；未提交事务产生的行版本对其他事务不可见，之后由正常清理机制回收。WAL 解释了为什么“已提交”通常能在进程或机器故障后恢复，却不等于备份、异地容灾或外部服务副作用已经完成。逻辑备份解决对象级导出和迁移，物理基础备份加归档 WAL 才能支持按时间点恢复；RPO、RTO 与实际 restore 演练应写进系统设计。
 
 ```mermaid
 flowchart TD
-  Change["Transaction changes"] --> WAL["Append WAL"]
-  WAL --> Flush["Flush WAL"]
-  Flush --> Commit["Confirm commit"]
-  Commit --> Dirty["Dirty pages"]
-  Dirty --> Checkpoint
-  WAL --> Recovery["Crash recovery"]
+  Change["Modify buffer page"] --> Dirty["Dirty buffer page"]
+  Change --> WAL["Append WAL records"]
+  WAL --> Commit["Flush commit WAL"]
+  Commit --> Reply["Confirm commit"]
+  Dirty --> Checkpoint["Checkpoint writes data pages"]
+  WAL --> Recovery["Crash recovery redoes from checkpoint"]
 ```
 
 ## 5.9 复习：高频问题的短答

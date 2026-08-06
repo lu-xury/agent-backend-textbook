@@ -30,17 +30,28 @@ Agent 后端沿用 HTTP、数据库、队列、可观测性和分布式一致性
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Running
+  [*] --> Queued
+  Queued --> Running: worker claims with version check
   Running --> WaitingApproval: risky tool
   WaitingApproval --> Running: approved
-  Running --> WaitingTool: execute
-  WaitingTool --> Running: result
-  Running --> Completed: final answer
-  Running --> Cancelled: cancel or budget
-  WaitingTool --> Cancelled: timeout or cancel
+  WaitingApproval --> Cancelled: user declines
+  Running --> WaitingTool: dispatch with step ID
+  WaitingTool --> Running: confirmed result
+  WaitingTool --> Reconciling: timeout or worker restart
+  Reconciling --> Running: outcome recovered
+  Reconciling --> ManualReview: automatic checks exhausted
+  Running --> Succeeded: final answer
+  Running --> Failed: unrecoverable error
+  Queued --> Cancelled: user cancels
+  Running --> Cancelling: user cancels
+  WaitingTool --> Cancelling: user cancels
+  Cancelling --> Cancelled: no external effect remains
+  Cancelling --> Reconciling: external effect is unknown
+  WaitingApproval --> Expired: approval or deadline expires
+  Running --> Expired: deadline or budget exhausted
 ```
 
-取消不是删除记录。用户点击取消时，Runtime 把 Run 标记为“请求取消”，停止再发起新的模型或工具调用，并向仍在运行的、支持取消的任务传播 cancellation token；已提交给不支持取消的邮件、支付或外部工单可能仍会完成，必须在状态中写明“取消请求已接受，结果待确认”。恢复也不是从头再跑：worker 重启后从事件和持久化状态判断最后一个**已确认完成**的步骤，跳过已完成的幂等操作，重新领取可安全重试的步骤。
+取消会保留记录并改变执行状态。用户点击取消时，Runtime 把 Run 标记为“请求取消”，停止再发起新的模型或工具调用，并向仍在运行且支持取消的任务传播 cancellation token；已提交给邮件、支付或外部工单的动作可能继续完成，状态应写明“取消请求已接受，结果待确认”。worker 重启后从事件和持久化状态判断最后一个**已确认完成**的步骤，跳过已完成的幂等操作，重新领取可安全重试的步骤。自动查询仍无法确定外部结果时，Run 进入 `ManualReview`，同时保留未知副作用、查询证据和处置人；`Failed` 只表示已确认的执行错误，不能掩盖结果未知。
 
 ### 高频辨析：会话、Run 与事件日志
 
@@ -58,13 +69,21 @@ stateDiagram-v2
 
 接入远程 MCP 前，Host 还要验证服务器身份并维护可审查的工具注册表。工具的名称、描述、annotation 和返回文本都不能自行授予权限；来自未知服务器的说明只能帮助模型理解，不能决定风险等级、自动确认或凭据作用域。每一次调用仍由 Runtime 的本地策略和当前用户授权决定；schema 合法不等于工具服务器可信。
 
-一个短例：模型请求
+`create_refund_draft` 的输入部分可以用 JSON Schema 表达。它只允许订单 UUID 和有限原因码，并拒绝模型临时增加 `amount`、`user_id` 或其他字段：
 
 ```json
-{"name":"create_refund_draft","arguments":{"order_id":"550e8400-e29b-41d4-a716-446655440000","reason":"duplicate"}}
+{
+  "type": "object",
+  "properties": {
+    "order_id": {"type": "string", "format": "uuid"},
+    "reason": {"type": "string", "enum": ["duplicate", "customer_request"]}
+  },
+  "required": ["order_id", "reason"],
+  "additionalProperties": false
+}
 ```
 
-Runtime 先做 JSON/Schema 校验，再读取服务端身份并确认该 UUID 订单属于当前用户；工具只创建金额、币种和收款方都固定的**退款草稿**。随后 UI 显示“向 Alice 的订单 550e…000 退款 ¥68.00，原因：重复下单”，用户点击确认后，带有审批 ID 的另一个受限命令才可提交。模型文本既不能跳过第二个命令，也不能篡改 UI 的确认摘要。
+`format: "uuid"` 在 JSON Schema 中属于格式约束；校验器需要显式启用或实现该格式检查，服务端还要按订单 ID 的业务语义再次验证。模型可据此提出 `{"order_id":"550e8400-e29b-41d4-a716-446655440000","reason":"duplicate"}`。Runtime 先做 JSON/Schema 校验，再读取服务端身份并确认该 UUID 订单属于当前用户；工具只创建金额、币种和收款方都固定的**退款草稿**。随后 UI 显示“向 Alice 的订单 550e…000 退款 ¥68.00，原因：重复下单”，用户点击确认后，带有审批 ID 的另一个受限命令才可提交。模型文本无法跳过第二个命令，也无法篡改 UI 的确认摘要。
 
 ### 高频辨析：Tool schema 与执行权限
 

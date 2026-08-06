@@ -48,11 +48,15 @@ sequenceDiagram
   participant C as Consumer
   participant D as Database
   B->>C: Deliver message
-  C->>D: Commit effect and dedupe
-  alt Commit succeeded
+  C->>D: Commit effect + unique event ID
+  D-->>C: committed
+  alt ACK reaches broker
     C-->>B: ACK
-  else ACK lost or process crashed
+  else ACK lost or consumer crashes after commit
     B->>C: Redeliver message
+    C->>D: Insert same event ID
+    D-->>C: duplicate, return stored result
+    C-->>B: ACK duplicate safely
   end
 ```
 
