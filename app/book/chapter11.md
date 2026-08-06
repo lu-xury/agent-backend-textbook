@@ -74,13 +74,23 @@ livenessProbe:
 ```mermaid
 stateDiagram-v2
   [*] --> Starting
-  Starting --> Ready: startup passed
-  Starting --> Failed: startup failed
+  Starting --> Running: startup passes
+  Starting --> Restarting: startup failure threshold reached
+  Running --> Ready: readiness passes
   Ready --> Unready: readiness failed
   Unready --> Ready: recovered
+  Running --> Restarting: liveness fails
+  Ready --> Restarting: liveness fails
+  Unready --> Restarting: liveness fails
+  Restarting --> Starting: restart policy
+  Running --> Draining: rollout or SIGTERM
   Ready --> Draining: rollout or SIGTERM
+  Unready --> Draining: rollout or SIGTERM
   Draining --> Stopped: requests complete
+  Stopped --> [*]
 ```
+
+图中的 `Starting`、`Ready`、`Unready` 和 `Draining` 是应用生命周期与探针动作的分析状态，用于说明“接流量、重启、终止”之间的关系；它们不等同于 Kubernetes API 的 Pod `phase` 字段。一个 Pod 的 phase 仍可能是 `Running`，其中的容器却因 liveness 失败而重启，或因 readiness 失败而暂时不接 Service 流量。
 
 一项探测的最长启动预算约为 `failureThreshold × periodSeconds`，还应为请求设置短且可承受的 `timeoutSeconds`。`/live` 应尽量只检查进程自身还能响应，不能每次都查询数据库或调用支付服务；否则依赖短暂故障会让所有副本同时重启，形成级联故障。`/ready` 可检查本实例是否已加载必需配置、监听完成、连接池可用，是否把某个下游纳入 readiness 则是业务选择：若订单创建离不开数据库，数据库不可达时不接流量合理；若推荐服务不可用但订单仍可降级创建，把它写进 readiness 会不必要地使整个 API 下线。探针要快、无副作用、避免高成本操作，并以真实用户路径和故障演练验证阈值。
 

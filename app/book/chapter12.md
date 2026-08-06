@@ -70,7 +70,7 @@ CAP 中的 **P（partition tolerance）**指节点间网络分区或丢包延迟
 
 ## 12.5 共识与选主：只协调必须唯一的事
 
-**共识**让一组节点在部分节点故障、网络不可靠时，对某个值或一串日志顺序达成一致；多数派确认、任期（term）和日志匹配规则保证在正确协议下，不会有两个不同 leader 都提交相互冲突的权威结果。发生分区时，旧 leader 仍可能暂时认为自己是 leader；若它失去多数派，就必须拒绝或无法提交需要线性一致性的写入，资源端还应以 fencing token 拒绝旧任期持有者。它适合保存少量但关键的协调状态：谁是当前 leader、配置版本、分片归属、分布式锁的持有者。Google SRE 对共识的提醒很实际：它是维护关键状态的工具，不是让每个业务读写都经过一轮投票的理由。[《Managing Critical State》](https://sre.google/sre-book/managing-critical-state/)也强调法定多数和故障域会影响可用性。
+**共识**让一组节点在部分节点故障、网络不可靠时，对某个值或一串日志顺序达成一致；多数派确认、任期（term）和日志匹配规则保证在正确协议下，不会有两个不同 leader 都提交相互冲突的权威结果。发生分区时，旧 leader 仍可能暂时认为自己是 leader；若它失去多数派，就必须拒绝或无法提交需要线性一致性的写入，资源端还应以 fencing token 拒绝旧任期持有者。共识常用于 leader、配置版本、分片归属和锁持有者等协调状态；分布式数据库也会在存储层用共识复制业务日志。应用通常通过数据库读写接口使用这项保证，无需让每段业务代码自行组织节点投票。Google SRE 的[《Managing Critical State》](https://sre.google/sre-book/managing-critical-state/)说明了法定多数、故障域和关键状态可用性之间的关系。
 
 ```mermaid
 sequenceDiagram
@@ -79,13 +79,17 @@ sequenceDiagram
   participant R1 as Replica 1
   participant R2 as Replica 2
   C->>L: Write
+  L->>L: Append to local log
   par Replicate
     L->>R1: Append
   and
     L->>R2: Append
   end
   R1-->>L: ACK
-  L-->>C: Quorum committed
+  Note over L,R1: Leader + Replica 1 = quorum (2 of 3)
+  L->>L: Mark entry committed
+  L-->>C: Success
+  R2-->>L: ACK later
 ```
 
 **选主**是共识的一种用途：同一任务只能有一个执行者时，leader 负责发号施令或调度，其他节点待命。选主成功不等于业务任务一定只执行一次。leader 在把“已处理”写入存储前崩溃，继任者仍可能重做任务；因此业务侧仍需要幂等和可恢复状态。Redis 锁只有在正确租约、原子释放、失联处理和资源 fencing 的前提下，才可能适用于有限场景；它不能替代真正需要线性化/协调保证的共识系统。无论使用何种锁，都要考虑租约过期、时钟暂停、旧持有者恢复后继续写入，以及资源端是否用 fencing token 拒绝旧任期的请求。

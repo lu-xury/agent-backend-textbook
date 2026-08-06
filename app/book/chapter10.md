@@ -93,14 +93,13 @@ SLI 是**测量值**，如成功请求比例；SLO 是团队希望达到的**目
 
 ```mermaid
 flowchart TD
-  Alert --> Scope
-  Scope --> Metrics
-  Scope --> Trace
-  Trace --> Logs
-  Metrics --> Mitigate
-  Logs --> Mitigate
-  Mitigate --> Verify
-  Verify --> Review
+  Alert --> Impact["Assess impact, severity, and owners"]
+  Impact --> Evidence["Correlate metrics, traces, logs, and changes"]
+  Impact --> Mitigate["Apply the safest reversible mitigation"]
+  Evidence --> Mitigate
+  Mitigate --> Verify{"User SLI recovered?"}
+  Verify -- No --> Evidence
+  Verify -- Yes --> Review["Preserve timeline, communicate, then review"]
 ```
 
 严重级别应按影响定义，而非按“系统看起来多复杂”。例如支付完全不可用、数据可能错误或大量客户受影响可为最高级；单一区域部分慢请求可为中等级；后台报表延迟但用户无直接影响可为低等级。上述只是示例：具体阈值、业务范围和法规义务由团队预先定义，数据泄露、重复扣款或安全事件也可能是最高优先级。级别要预先规定通知对象、响应时限、更新频率和升级路径。不要等到根因查清才向用户或业务方更新：可以诚实地说明“我们确认订单创建失败率升高，正在回滚 09:20 的发布，下一次更新在 15 分钟后”，而不是猜测尚未验证的原因。

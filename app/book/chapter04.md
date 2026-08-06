@@ -16,15 +16,14 @@
 
 ```mermaid
 flowchart TD
-  Request --> Limits
-  Limits --> Parse
-  Parse -->|Invalid| Error
-  Parse -->|Valid| AuthN
-  AuthN --> AuthZ
-  AuthZ -->|Denied| Error
-  AuthZ -->|Allowed| Domain
-  Domain --> Transaction
-  Transaction --> Response
+  Request --> Limits{"Size and deadline valid?"}
+  Limits -- No --> E413["Reject: 413 or timeout"]
+  Limits -- Yes --> Parse{"Parse and validate"}
+  Parse -- Invalid --> E4xx["Reject: 400 / 415 / 422"]
+  Parse -- Valid --> Auth["Authenticate, then authorize resource"]
+  Auth -- Denied --> E401["Reject: 401 / 403 / 404 policy"]
+  Auth -- Allowed --> Domain["Run use case in transaction boundary"]
+  Domain --> Response["Map result to response DTO"]
 ```
 
 请求体不是天然安全的对象。`Content-Type: application/json` 只是调用者的声明；服务器仍要按内容类型选择解析器，控制最大长度、嵌套深度和解析时间，处理无效编码与畸形 JSON。对于 `GET /tasks?limit=20`，`limit` 在网络上原本是字符串，框架可以把它转换为整数；转换失败不应悄悄使用默认值，否则客户端以为自己拿到 20 条，实际可能拿到所有数据。
