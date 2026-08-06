@@ -12,6 +12,7 @@
     "preview": "vite preview --config vite.config.ts"
   },
   "dependencies": {
+    "mermaid": "11.16.1",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },
